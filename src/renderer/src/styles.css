@@ -2,17 +2,30 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  height: 100%;
   margin: 0;
+  /* The app must never produce its own page-level scrollbar — content that
+     doesn't fit the window is clipped, not scrolled. Only the loaded pages
+     themselves scroll, via the compare stage's own pan/wheel handling. */
+  overflow: hidden;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #16181d;
   color: #e6e6e6;
 }
 
 .app {
-  padding: 24px 32px 48px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 32px 20px;
   max-width: 1400px;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 header h1 {
@@ -21,15 +34,9 @@ header h1 {
 }
 
 .subtitle {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
   color: #9a9ea6;
   font-size: 13px;
-}
-
-.pickers {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
 }
 
 .source-picker {
@@ -114,6 +121,8 @@ button.active {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
+  min-height: 0;
 }
 
 .overlay-sidebars {
@@ -227,10 +236,13 @@ button.active {
 }
 
 .overlay-stage-wrapper {
-  /* No overflow:auto here on purpose — this must never be independently
-     scrollable, or its native scroll fights the wheel-forwarding into the
-     live pages inside .overlay-stage. */
-  overflow: visible;
+  /* Never scrollable — a stage bigger than this box is clipped, not
+     scrolled, so there's exactly one scroll surface in the whole app: the
+     loaded pages themselves, via the stage's own pan/wheel handling. */
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
   border: 1px solid #2c3038;
   border-radius: 10px;
   background: #0f1013;
@@ -241,8 +253,9 @@ button.active {
   resize: both;
   overflow: hidden;
   min-width: 280px;
-  min-height: 300px;
+  min-height: 200px;
   max-width: 100%;
+  max-height: 100%;
 }
 
 .webview-layer {
