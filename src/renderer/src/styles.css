@@ -245,6 +245,10 @@ button.active {
   inset: 0;
   width: 100%;
   height: 100%;
+  /* The guest surface can paint transparent until the page fills it, which
+     lets the layer stacked underneath bleed through. Force an opaque
+     backdrop so each layer always fully occludes what's behind it. */
+  background-color: #ffffff;
   border: 0;
   display: flex;
   user-select: none;
