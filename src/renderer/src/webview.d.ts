@@ -12,6 +12,7 @@ export interface ElectronWebViewElement extends HTMLElement {
   loadURL(url: string): Promise<void>
   stop(): void
   capturePage(rect?: { x: number; y: number; width: number; height: number }): Promise<NativeImage>
+  executeJavaScript(code: string, userGesture?: boolean): Promise<unknown>
 }
 
 type WebViewAttributes = DetailedHTMLProps<HTMLAttributes<ElectronWebViewElement>, ElectronWebViewElement> & {
