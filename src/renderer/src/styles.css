@@ -153,6 +153,11 @@ button.active {
   color: #6a6f78;
 }
 
+.sensitivity-slider {
+  width: 80px;
+  accent-color: #4c6ef5;
+}
+
 .swap-btn {
   background: #2a2e36;
 }

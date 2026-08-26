@@ -35,6 +35,7 @@ export default function OverlayCompare(): JSX.Element {
   const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
   const [percent, setPercent] = useState(50)
   const [syncScroll, setSyncScroll] = useState(true)
+  const [scrollSensitivity, setScrollSensitivity] = useState(0.5)
   const [swapped, setSwapped] = useState(false)
   const [interactMode, setInteractMode] = useState(false)
   const [mode, setMode] = useState<'slider' | 'diff'>('slider')
@@ -94,7 +95,6 @@ export default function OverlayCompare(): JSX.Element {
   }
 
   const SLIDER_GRAB_PERCENT = 4 // how close to the line counts as "grabbing" it
-  const WHEEL_DAMPING = 0.5 // raw wheel deltas (esp. trackpads) tend to overshoot
 
   function updatePercentFromClientX(clientX: number): void {
     const rect = stageRef.current?.getBoundingClientRect()
@@ -152,7 +152,9 @@ export default function OverlayCompare(): JSX.Element {
   function handleWheel(e: React.WheelEvent): void {
     e.preventDefault()
     const targets = scrollTargetsAt(e.clientX)
-    for (const target of targets) target.current?.scrollBy(e.deltaX * WHEEL_DAMPING, e.deltaY * WHEEL_DAMPING)
+    for (const target of targets) {
+      target.current?.scrollBy(e.deltaX * scrollSensitivity, e.deltaY * scrollSensitivity)
+    }
   }
 
   async function captureSide(side: Side): Promise<LoadedSource> {
@@ -322,6 +324,17 @@ export default function OverlayCompare(): JSX.Element {
               Independently
             </button>
           </div>
+          <input
+            type="range"
+            className="sensitivity-slider"
+            min={0.1}
+            max={2}
+            step={0.1}
+            value={scrollSensitivity}
+            onChange={(e) => setScrollSensitivity(Number(e.target.value))}
+            title="Scroll sensitivity"
+          />
+          <span className="size-readout">{scrollSensitivity.toFixed(1)}x</span>
         </div>
 
         <div className="toolbar-group">
