@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import LiveWebviewLayer, { type LiveWebviewHandle, type NavState } from './LiveWebviewLayer'
 import { SIZE_PRESETS, normalizeUrl } from '../presets'
 import type { LoadedSource, SourceKind } from '../types'
@@ -45,7 +45,10 @@ export default function OverlayCompare(): JSX.Element {
 
   const stageRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const dragging = useRef(false)
+  const dragMode = useRef<'slider' | 'pan' | null>(null)
+  const [activeDrag, setActiveDrag] = useState<'slider' | 'pan' | null>(null)
+  const panLast = useRef<{ x: number; y: number } | null>(null)
+  const panTargets = useRef<Array<RefObject<LiveWebviewHandle>>>([])
 
   const setSide = (side: Side, patch: Partial<SideState>): void => {
     const setter = side === 'left' ? setLeft : setRight
@@ -90,6 +93,9 @@ export default function OverlayCompare(): JSX.Element {
     setSize({ width: preset.width, height: preset.height })
   }
 
+  const SLIDER_GRAB_PERCENT = 4 // how close to the line counts as "grabbing" it
+  const WHEEL_DAMPING = 0.5 // raw wheel deltas (esp. trackpads) tend to overshoot
+
   function updatePercentFromClientX(clientX: number): void {
     const rect = stageRef.current?.getBoundingClientRect()
     if (!rect) return
@@ -97,32 +103,56 @@ export default function OverlayCompare(): JSX.Element {
     setPercent(Math.min(100, Math.max(0, raw)))
   }
 
+  // Whichever side(s) should scroll for a pointer event at this x position,
+  // given the current sync-scroll setting. The clipped layer is visible in
+  // [0, percent]% of the stage; the base layer shows through past that.
+  function scrollTargetsAt(clientX: number): Array<RefObject<LiveWebviewHandle>> {
+    if (syncScroll) return [leftRef, rightRef]
+    const rect = stageRef.current?.getBoundingClientRect()
+    const pointerPercent = rect ? ((clientX - rect.left) / rect.width) * 100 : 0
+    return [pointerPercent < percent ? refOf(clippedSide) : refOf(baseSide)]
+  }
+
   function handlePointerDown(e: React.PointerEvent): void {
-    dragging.current = true
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    updatePercentFromClientX(e.clientX)
+    const rect = stageRef.current?.getBoundingClientRect()
+    const pointerPercent = rect ? ((e.clientX - rect.left) / rect.width) * 100 : 0
+    const grabbingSlider = mode === 'slider' && Math.abs(pointerPercent - percent) <= SLIDER_GRAB_PERCENT
+
+    if (grabbingSlider) {
+      dragMode.current = 'slider'
+      setActiveDrag('slider')
+      updatePercentFromClientX(e.clientX)
+    } else {
+      dragMode.current = 'pan'
+      setActiveDrag('pan')
+      panLast.current = { x: e.clientX, y: e.clientY }
+      panTargets.current = scrollTargetsAt(e.clientX)
+    }
   }
   function handlePointerMove(e: React.PointerEvent): void {
-    if (dragging.current) updatePercentFromClientX(e.clientX)
+    if (dragMode.current === 'slider') {
+      updatePercentFromClientX(e.clientX)
+    } else if (dragMode.current === 'pan' && panLast.current) {
+      const dx = e.clientX - panLast.current.x
+      const dy = e.clientY - panLast.current.y
+      panLast.current = { x: e.clientX, y: e.clientY }
+      // Grab-to-pan: content follows the pointer, so it scrolls opposite
+      // the pointer's movement.
+      for (const target of panTargets.current) target.current?.scrollBy(-dx, -dy)
+    }
   }
   function handlePointerUp(): void {
-    dragging.current = false
+    dragMode.current = null
+    setActiveDrag(null)
+    panLast.current = null
+    panTargets.current = []
   }
 
   function handleWheel(e: React.WheelEvent): void {
     e.preventDefault()
-    if (syncScroll) {
-      leftRef.current?.scrollBy(e.deltaX, e.deltaY)
-      rightRef.current?.scrollBy(e.deltaX, e.deltaY)
-      return
-    }
-    // Independent mode: scroll whichever side is visually showing under the
-    // cursor. The clipped layer covers [0, percent]% of the stage (clipped
-    // from the left edge); the base layer shows through past that.
-    const rect = stageRef.current?.getBoundingClientRect()
-    const pointerPercent = rect ? ((e.clientX - rect.left) / rect.width) * 100 : 0
-    const target = pointerPercent < percent ? refOf(clippedSide) : refOf(baseSide)
-    target.current?.scrollBy(e.deltaX, e.deltaY)
+    const targets = scrollTargetsAt(e.clientX)
+    for (const target of targets) target.current?.scrollBy(e.deltaX * WHEEL_DAMPING, e.deltaY * WHEEL_DAMPING)
   }
 
   async function captureSide(side: Side): Promise<LoadedSource> {
@@ -222,6 +252,12 @@ export default function OverlayCompare(): JSX.Element {
         {state.loadError && <p className="error">Failed to load: {state.loadError}</p>}
       </div>
     )
+  }
+
+  function labelFor(side: Side): string {
+    const state = stateOf(side)
+    if (state.kind === 'image') return state.image?.label ?? 'No image loaded'
+    return state.navigatedUrl ?? 'Not loaded'
   }
 
   const bothReady =
@@ -341,9 +377,23 @@ export default function OverlayCompare(): JSX.Element {
             <div className="overlay-placeholder">Load a website or image on both sides to start comparing</div>
           )}
 
+          {bothReady && (
+            <>
+              <div className="corner-label corner-label-left" title={labelFor(clippedSide)}>
+                {labelFor(clippedSide)}
+              </div>
+              <div className="corner-label corner-label-right" title={labelFor(baseSide)}>
+                {labelFor(baseSide)}
+              </div>
+            </>
+          )}
+
           <div
             className="interaction-layer"
-            style={{ pointerEvents: interactMode ? 'none' : 'auto' }}
+            style={{
+              pointerEvents: interactMode ? 'none' : 'auto',
+              cursor: activeDrag === 'slider' ? 'ew-resize' : activeDrag === 'pan' ? 'grabbing' : 'grab'
+            }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}

@@ -274,8 +274,32 @@ button.active {
 .interaction-layer {
   position: absolute;
   inset: 0;
-  cursor: ew-resize;
+  cursor: grab;
   z-index: 5;
+}
+
+.corner-label {
+  position: absolute;
+  top: 8px;
+  max-width: 45%;
+  padding: 4px 9px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 11px;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.corner-label-left {
+  left: 8px;
+}
+
+.corner-label-right {
+  right: 8px;
 }
 
 .slider-line {
