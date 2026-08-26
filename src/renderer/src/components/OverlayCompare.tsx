@@ -34,6 +34,7 @@ export default function OverlayCompare(): JSX.Element {
   const [activePreset, setActivePreset] = useState<string>(SIZE_PRESETS[4].label)
   const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
   const [percent, setPercent] = useState(50)
+  const [syncScroll, setSyncScroll] = useState(true)
   const [mode, setMode] = useState<'slider' | 'diff'>('slider')
   const [diffing, setDiffing] = useState(false)
   const [matchPercent, setMatchPercent] = useState<number | null>(null)
@@ -99,8 +100,18 @@ export default function OverlayCompare(): JSX.Element {
 
   function handleWheel(e: React.WheelEvent): void {
     e.preventDefault()
-    leftRef.current?.scrollBy(e.deltaX, e.deltaY)
-    rightRef.current?.scrollBy(e.deltaX, e.deltaY)
+    if (syncScroll) {
+      leftRef.current?.scrollBy(e.deltaX, e.deltaY)
+      rightRef.current?.scrollBy(e.deltaX, e.deltaY)
+      return
+    }
+    // Independent mode: scroll whichever side is visually showing under the
+    // cursor. The right layer covers [0, percent]% of the stage (clipped
+    // from the left edge); the left layer shows through past that.
+    const rect = stageRef.current?.getBoundingClientRect()
+    const pointerPercent = rect ? ((e.clientX - rect.left) / rect.width) * 100 : 0
+    const target = pointerPercent < percent ? rightRef : leftRef
+    target.current?.scrollBy(e.deltaX, e.deltaY)
   }
 
   async function captureSide(side: Side): Promise<LoadedSource> {
@@ -226,6 +237,14 @@ export default function OverlayCompare(): JSX.Element {
           {size.width}×{size.height}
         </span>
         <div className="mode-toggle">
+          <button className={syncScroll ? 'active' : ''} onClick={() => setSyncScroll(true)}>
+            Scroll together
+          </button>
+          <button className={!syncScroll ? 'active' : ''} onClick={() => setSyncScroll(false)}>
+            Scroll independently
+          </button>
+        </div>
+        <div className="mode-toggle">
           <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
             Slider
           </button>
@@ -242,12 +261,7 @@ export default function OverlayCompare(): JSX.Element {
       {diffError && <p className="error">{diffError}</p>}
 
       <div className="overlay-stage-wrapper" ref={containerRef}>
-        <div
-          className="overlay-stage"
-          ref={stageRef}
-          style={{ width: size.width, height: size.height }}
-          onWheel={handleWheel}
-        >
+        <div className="overlay-stage" ref={stageRef} style={{ width: size.width, height: size.height }}>
           {left.kind === 'image' && left.image ? (
             <img src={left.image.dataUrl} alt="Left" className="webview-layer" draggable={false} />
           ) : (
