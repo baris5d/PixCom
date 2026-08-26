@@ -18,16 +18,34 @@ export default function BrowserPanel({ onCaptured }: Props): JSX.Element {
   const [captureError, setCaptureError] = useState<string | null>(null)
   const [activePreset, setActivePreset] = useState<string>(SIZE_PRESETS[4].label)
   const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
+  const [canGoBack, setCanGoBack] = useState(false)
+  const [canGoForward, setCanGoForward] = useState(false)
 
   useEffect(() => {
     const webview = webviewRef.current
     if (!webview) return
 
+    // The webview's own navigation methods throw until its guest view has
+    // attached (i.e. before "dom-ready"), so nav-state is only ever read
+    // here — inside a handler — never during render.
+    const updateNavState = (): void => {
+      try {
+        setCanGoBack(webview.canGoBack())
+        setCanGoForward(webview.canGoForward())
+      } catch {
+        setCanGoBack(false)
+        setCanGoForward(false)
+      }
+    }
+
     const handleStart = (): void => {
       setLoading(true)
       setLoadError(null)
     }
-    const handleStop = (): void => setLoading(false)
+    const handleStop = (): void => {
+      setLoading(false)
+      updateNavState()
+    }
     const handleFail = (e: Event): void => {
       const event = e as unknown as { errorCode: number; errorDescription: string; isMainFrame: boolean }
       if (!event.isMainFrame || event.errorCode === -3) return // -3 = ERR_ABORTED, e.g. cancelled navigation
@@ -38,10 +56,14 @@ export default function BrowserPanel({ onCaptured }: Props): JSX.Element {
     webview.addEventListener('did-start-loading', handleStart)
     webview.addEventListener('did-stop-loading', handleStop)
     webview.addEventListener('did-fail-load', handleFail)
+    webview.addEventListener('did-navigate', updateNavState)
+    webview.addEventListener('did-navigate-in-page', updateNavState)
     return () => {
       webview.removeEventListener('did-start-loading', handleStart)
       webview.removeEventListener('did-stop-loading', handleStop)
       webview.removeEventListener('did-fail-load', handleFail)
+      webview.removeEventListener('did-navigate', updateNavState)
+      webview.removeEventListener('did-navigate-in-page', updateNavState)
     }
   }, [currentUrl])
 
@@ -56,6 +78,16 @@ export default function BrowserPanel({ onCaptured }: Props): JSX.Element {
     observer.observe(container)
     return () => observer.disconnect()
   }, [])
+
+  function safeCall(fn: (webview: ElectronWebViewElement) => void): void {
+    const webview = webviewRef.current
+    if (!webview) return
+    try {
+      fn(webview)
+    } catch {
+      // webview guest not attached yet (pre "dom-ready") — ignore.
+    }
+  }
 
   function navigate(target: string): void {
     const url = normalizeUrl(target)
@@ -85,21 +117,13 @@ export default function BrowserPanel({ onCaptured }: Props): JSX.Element {
   return (
     <div className="browser-panel">
       <div className="address-bar">
-        <button
-          className="nav-btn"
-          disabled={!webviewRef.current?.canGoBack()}
-          onClick={() => webviewRef.current?.goBack()}
-        >
+        <button className="nav-btn" disabled={!canGoBack} onClick={() => safeCall((w) => w.goBack())}>
           ←
         </button>
-        <button
-          className="nav-btn"
-          disabled={!webviewRef.current?.canGoForward()}
-          onClick={() => webviewRef.current?.goForward()}
-        >
+        <button className="nav-btn" disabled={!canGoForward} onClick={() => safeCall((w) => w.goForward())}>
           →
         </button>
-        <button className="nav-btn" disabled={!currentUrl} onClick={() => webviewRef.current?.reload()}>
+        <button className="nav-btn" disabled={!currentUrl} onClick={() => safeCall((w) => w.reload())}>
           ⟳
         </button>
         <input
