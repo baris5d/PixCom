@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, type CSSProperties } from 'react'
 import LiveWebviewLayer, { type LiveWebviewHandle, type NavState } from './LiveWebviewLayer'
 import { SIZE_PRESETS, normalizeUrl } from '../presets'
 import type { LoadedSource, SourceKind } from '../types'
@@ -228,15 +228,24 @@ export default function OverlayCompare(): JSX.Element {
     (left.kind === 'url' ? !!left.navigatedUrl : !!left.image) &&
     (right.kind === 'url' ? !!right.navigatedUrl : !!right.image)
 
+  // Each side is always rendered in the same stable slot (same component
+  // identity/key), so a page's navigation session survives a swap. Only the
+  // clip-path/z-index — which visual role it plays — changes with `swapped`.
   function renderLayer(side: Side): JSX.Element {
     const state = stateOf(side)
-    const ref = refOf(side)
+    const isClippedRole = side === clippedSide
+    const style: CSSProperties = {
+      zIndex: isClippedRole ? 2 : 1,
+      clipPath: mode === 'slider' && isClippedRole ? `inset(0 ${100 - percent}% 0 0)` : undefined
+    }
     if (state.kind === 'image' && state.image) {
-      return <img src={state.image.dataUrl} alt={side} className="webview-layer" draggable={false} />
+      return <img key={side} src={state.image.dataUrl} alt={side} className="webview-layer" style={style} draggable={false} />
     }
     return (
       <LiveWebviewLayer
-        ref={ref}
+        key={side}
+        ref={refOf(side)}
+        style={style}
         onLoadingChange={handleLoadingChange(side)}
         onNavStateChange={handleNavStateChange(side)}
         onError={handleError(side)}
@@ -321,19 +330,11 @@ export default function OverlayCompare(): JSX.Element {
 
       <div className="overlay-stage-wrapper" ref={containerRef}>
         <div className="overlay-stage" ref={stageRef} style={{ width: size.width, height: size.height }}>
-          {renderLayer(baseSide)}
+          {renderLayer('left')}
+          {renderLayer('right')}
 
-          {mode === 'slider' ? (
-            <div className="clip-wrapper" style={{ clipPath: `inset(0 ${100 - percent}% 0 0)` }}>
-              {renderLayer(clippedSide)}
-            </div>
-          ) : (
-            <>
-              <div className="clip-wrapper" style={{ clipPath: 'inset(0 0 0 0)', visibility: 'hidden' }}>
-                {renderLayer(clippedSide)}
-              </div>
-              {diffDataUrl && <img src={diffDataUrl} alt="Difference" className="webview-layer diff-layer" />}
-            </>
+          {mode === 'diff' && diffDataUrl && (
+            <img src={diffDataUrl} alt="Difference" className="webview-layer diff-layer" />
           )}
 
           {!bothReady && (

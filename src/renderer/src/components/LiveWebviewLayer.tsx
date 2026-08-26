@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react'
 import type { ElectronWebViewElement } from '../webview'
 
 export interface LiveWebviewHandle {
@@ -17,13 +17,14 @@ export interface NavState {
 }
 
 interface Props {
+  style?: CSSProperties
   onLoadingChange?: (loading: boolean) => void
   onNavStateChange?: (state: NavState) => void
   onError?: (message: string | null) => void
 }
 
 const LiveWebviewLayer = forwardRef<LiveWebviewHandle, Props>(function LiveWebviewLayer(
-  { onLoadingChange, onNavStateChange, onError },
+  { style, onLoadingChange, onNavStateChange, onError },
   ref
 ) {
   const webviewRef = useRef<ElectronWebViewElement>(null)
@@ -129,6 +130,7 @@ const LiveWebviewLayer = forwardRef<LiveWebviewHandle, Props>(function LiveWebvi
       src={mountedSrcRef.current}
       partition="persist:pixelcompare-browse"
       className="webview-layer"
+      style={style}
     />
   )
 })

@@ -222,7 +222,10 @@ button.active {
 }
 
 .overlay-stage-wrapper {
-  overflow: auto;
+  /* No overflow:auto here on purpose — this must never be independently
+     scrollable, or its native scroll fights the wheel-forwarding into the
+     live pages inside .overlay-stage. */
+  overflow: visible;
   border: 1px solid #2c3038;
   border-radius: 10px;
   background: #0f1013;
@@ -247,15 +250,8 @@ button.active {
   user-select: none;
 }
 
-.clip-wrapper {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
 .diff-layer {
-  z-index: 1;
+  z-index: 3;
 }
 
 .overlay-placeholder {
@@ -268,14 +264,14 @@ button.active {
   font-size: 13px;
   text-align: center;
   padding: 20px;
-  z-index: 2;
+  z-index: 4;
 }
 
 .interaction-layer {
   position: absolute;
   inset: 0;
   cursor: ew-resize;
-  z-index: 3;
+  z-index: 5;
 }
 
 .slider-line {
