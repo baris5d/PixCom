@@ -3,6 +3,13 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
 
+// Electron's default UA includes an "Electron/x.y.z" token that some
+// bot-protection services (Akamai, Cloudflare, etc.) block outright.
+// Spoofing a plain desktop Chrome UA lets embedded <webview> panels load
+// sites that would otherwise time out or get challenged.
+const BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1400,
@@ -11,8 +18,19 @@ function createWindow(): void {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false
+      sandbox: false,
+      webviewTag: true
     }
+  })
+
+  // Defense in depth: guests created by our own renderer via <webview> are
+  // trusted, but keep them isolated and force the spoofed UA regardless of
+  // what the renderer passed.
+  mainWindow.webContents.on('will-attach-webview', (_event, webPreferences, params) => {
+    delete webPreferences.preload
+    webPreferences.nodeIntegration = false
+    webPreferences.contextIsolation = true
+    params.useragent = BROWSER_USER_AGENT
   })
 
   mainWindow.on('ready-to-show', () => {

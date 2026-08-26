@@ -1,7 +1,6 @@
 import { dialog, ipcMain } from 'electron'
 import { readFile } from 'fs/promises'
 import { Jimp } from 'jimp'
-import { captureUrl } from './capture'
 import { diffImages } from './diff'
 
 export interface SourceResult {
@@ -27,14 +26,6 @@ function extToMime(path: string): string {
 }
 
 export function registerIpcHandlers(): void {
-  ipcMain.handle(
-    'capture-url',
-    async (_event, args: { url: string; viewportWidth: number; fullPage: boolean }) => {
-      const result = await captureUrl(args)
-      return { ...result, label: args.url } satisfies SourceResult
-    }
-  )
-
   ipcMain.handle('pick-image', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openFile'],

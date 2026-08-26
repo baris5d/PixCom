@@ -17,9 +17,6 @@ export interface DiffResult {
 }
 
 const api = {
-  captureUrl: (args: { url: string; viewportWidth: number; fullPage: boolean }): Promise<SourceResult> =>
-    ipcRenderer.invoke('capture-url', args),
-
   pickImage: (): Promise<SourceResult | null> => ipcRenderer.invoke('pick-image'),
 
   diffImages: (args: { leftDataUrl: string; rightDataUrl: string }): Promise<DiffResult> =>
