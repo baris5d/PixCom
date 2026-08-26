@@ -35,6 +35,8 @@ export default function OverlayCompare(): JSX.Element {
   const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
   const [percent, setPercent] = useState(50)
   const [syncScroll, setSyncScroll] = useState(true)
+  const [swapped, setSwapped] = useState(false)
+  const [interactMode, setInteractMode] = useState(false)
   const [mode, setMode] = useState<'slider' | 'diff'>('slider')
   const [diffing, setDiffing] = useState(false)
   const [matchPercent, setMatchPercent] = useState<number | null>(null)
@@ -49,6 +51,15 @@ export default function OverlayCompare(): JSX.Element {
     const setter = side === 'left' ? setLeft : setRight
     setter((prev) => ({ ...prev, ...patch }))
   }
+  const stateOf = (side: Side): SideState => (side === 'left' ? left : right)
+  const refOf = (side: Side): typeof leftRef => (side === 'left' ? leftRef : rightRef)
+
+  // The stage always renders a "base" layer (fully visible, shows through
+  // past the slider) and a "clipped" layer (revealed from the left edge up
+  // to the slider position). Swapping flips which loaded side plays which
+  // role, without touching the address bars or re-navigating anything.
+  const baseSide: Side = swapped ? 'right' : 'left'
+  const clippedSide: Side = swapped ? 'left' : 'right'
 
   const handleLoadingChange = useCallback(
     (side: Side) => (loading: boolean) => setSide(side, { loading }),
@@ -106,11 +117,11 @@ export default function OverlayCompare(): JSX.Element {
       return
     }
     // Independent mode: scroll whichever side is visually showing under the
-    // cursor. The right layer covers [0, percent]% of the stage (clipped
-    // from the left edge); the left layer shows through past that.
+    // cursor. The clipped layer covers [0, percent]% of the stage (clipped
+    // from the left edge); the base layer shows through past that.
     const rect = stageRef.current?.getBoundingClientRect()
     const pointerPercent = rect ? ((e.clientX - rect.left) / rect.width) * 100 : 0
-    const target = pointerPercent < percent ? rightRef : leftRef
+    const target = pointerPercent < percent ? refOf(clippedSide) : refOf(baseSide)
     target.current?.scrollBy(e.deltaX, e.deltaY)
   }
 
@@ -148,6 +159,7 @@ export default function OverlayCompare(): JSX.Element {
     const ref = side === 'left' ? leftRef : rightRef
     return (
       <div className="overlay-sidebar">
+        <span className="sidebar-title">{side === 'left' ? 'Left' : 'Right'}</span>
         <div className="kind-toggle">
           <button
             className={state.kind === 'url' ? 'active' : ''}
@@ -216,6 +228,22 @@ export default function OverlayCompare(): JSX.Element {
     (left.kind === 'url' ? !!left.navigatedUrl : !!left.image) &&
     (right.kind === 'url' ? !!right.navigatedUrl : !!right.image)
 
+  function renderLayer(side: Side): JSX.Element {
+    const state = stateOf(side)
+    const ref = refOf(side)
+    if (state.kind === 'image' && state.image) {
+      return <img src={state.image.dataUrl} alt={side} className="webview-layer" draggable={false} />
+    }
+    return (
+      <LiveWebviewLayer
+        ref={ref}
+        onLoadingChange={handleLoadingChange(side)}
+        onNavStateChange={handleNavStateChange(side)}
+        onError={handleError(side)}
+      />
+    )
+  }
+
   return (
     <div className="overlay-compare">
       <div className="overlay-sidebars">
@@ -236,22 +264,53 @@ export default function OverlayCompare(): JSX.Element {
         <span className="size-readout">
           {size.width}×{size.height}
         </span>
-        <div className="mode-toggle">
-          <button className={syncScroll ? 'active' : ''} onClick={() => setSyncScroll(true)}>
-            Scroll together
-          </button>
-          <button className={!syncScroll ? 'active' : ''} onClick={() => setSyncScroll(false)}>
-            Scroll independently
-          </button>
+      </div>
+
+      <div className="size-toolbar">
+        <div className="toolbar-group">
+          <span className="toolbar-label">Scroll</span>
+          <div className="mode-toggle">
+            <button className={syncScroll ? 'active' : ''} onClick={() => setSyncScroll(true)}>
+              Together
+            </button>
+            <button className={!syncScroll ? 'active' : ''} onClick={() => setSyncScroll(false)}>
+              Independently
+            </button>
+          </div>
         </div>
-        <div className="mode-toggle">
-          <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
-            Slider
-          </button>
-          <button className={mode === 'diff' ? 'active' : ''} onClick={() => setMode('diff')} disabled={!diffDataUrl}>
-            Diff overlay
-          </button>
+
+        <div className="toolbar-group">
+          <span className="toolbar-label">Pages</span>
+          <div className="mode-toggle">
+            <button className={!interactMode ? 'active' : ''} onClick={() => setInteractMode(false)}>
+              Compare
+            </button>
+            <button className={interactMode ? 'active' : ''} onClick={() => setInteractMode(true)}>
+              Interact (click/hover)
+            </button>
+          </div>
         </div>
+
+        <div className="toolbar-group">
+          <span className="toolbar-label">View</span>
+          <div className="mode-toggle">
+            <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
+              Slider
+            </button>
+            <button
+              className={mode === 'diff' ? 'active' : ''}
+              onClick={() => setMode('diff')}
+              disabled={!diffDataUrl}
+            >
+              Diff overlay
+            </button>
+          </div>
+        </div>
+
+        <button className="swap-btn" onClick={() => setSwapped((s) => !s)} title="Swap left/right positions">
+          ⇄ Swap
+        </button>
+
         <button className="run-diff" disabled={!bothReady || diffing} onClick={runDiff}>
           {diffing ? 'Comparing…' : 'Calculate match %'}
         </button>
@@ -262,43 +321,16 @@ export default function OverlayCompare(): JSX.Element {
 
       <div className="overlay-stage-wrapper" ref={containerRef}>
         <div className="overlay-stage" ref={stageRef} style={{ width: size.width, height: size.height }}>
-          {left.kind === 'image' && left.image ? (
-            <img src={left.image.dataUrl} alt="Left" className="webview-layer" draggable={false} />
-          ) : (
-            <LiveWebviewLayer
-              ref={leftRef}
-              onLoadingChange={handleLoadingChange('left')}
-              onNavStateChange={handleNavStateChange('left')}
-              onError={handleError('left')}
-            />
-          )}
+          {renderLayer(baseSide)}
 
           {mode === 'slider' ? (
             <div className="clip-wrapper" style={{ clipPath: `inset(0 ${100 - percent}% 0 0)` }}>
-              {right.kind === 'image' && right.image ? (
-                <img src={right.image.dataUrl} alt="Right" className="webview-layer" draggable={false} />
-              ) : (
-                <LiveWebviewLayer
-                  ref={rightRef}
-                  onLoadingChange={handleLoadingChange('right')}
-                  onNavStateChange={handleNavStateChange('right')}
-                  onError={handleError('right')}
-                />
-              )}
+              {renderLayer(clippedSide)}
             </div>
           ) : (
             <>
               <div className="clip-wrapper" style={{ clipPath: 'inset(0 0 0 0)', visibility: 'hidden' }}>
-                {right.kind === 'image' && right.image ? (
-                  <img src={right.image.dataUrl} alt="Right" className="webview-layer" draggable={false} />
-                ) : (
-                  <LiveWebviewLayer
-                    ref={rightRef}
-                    onLoadingChange={handleLoadingChange('right')}
-                    onNavStateChange={handleNavStateChange('right')}
-                    onError={handleError('right')}
-                  />
-                )}
+                {renderLayer(clippedSide)}
               </div>
               {diffDataUrl && <img src={diffDataUrl} alt="Difference" className="webview-layer diff-layer" />}
             </>
@@ -310,6 +342,7 @@ export default function OverlayCompare(): JSX.Element {
 
           <div
             className="interaction-layer"
+            style={{ pointerEvents: interactMode ? 'none' : 'auto' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
