@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 // chrome bolted on top of it.
 export default function TopBar(): JSX.Element {
   const [maximized, setMaximized] = useState(false)
+  const [version, setVersion] = useState<string | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [updateProgress, setUpdateProgress] = useState<number | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -14,6 +15,10 @@ export default function TopBar(): JSX.Element {
   useEffect(() => {
     window.api.window.isMaximized().then(setMaximized)
     return window.api.window.onMaximizedChanged(setMaximized)
+  }, [])
+
+  useEffect(() => {
+    window.api.getVersion().then(setVersion)
   }, [])
 
   useEffect(() => {
@@ -42,10 +47,63 @@ export default function TopBar(): JSX.Element {
   // without touching which element is which.
   const isMac = window.api.platform === 'darwin'
 
+  const minimizeBtn = (
+    <button
+      key="minimize"
+      className="topbar-btn"
+      onClick={() => window.api.window.minimize()}
+      title="Minimize"
+      aria-label="Minimize"
+    >
+      <svg viewBox="0 0 10 10" width="10" height="10">
+        <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
+      </svg>
+    </button>
+  )
+
+  const maximizeBtn = (
+    <button
+      key="maximize"
+      className="topbar-btn"
+      onClick={() => window.api.window.toggleMaximize()}
+      title={maximized ? 'Restore' : 'Maximize'}
+      aria-label={maximized ? 'Restore' : 'Maximize'}
+    >
+      {maximized ? (
+        <svg viewBox="0 0 10 10" width="10" height="10">
+          <rect x="1.5" y="0" width="7" height="7" fill="none" stroke="currentColor" />
+          <rect x="0" y="2" width="7" height="7" fill="none" stroke="currentColor" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 10 10" width="10" height="10">
+          <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" />
+        </svg>
+      )}
+    </button>
+  )
+
+  const closeBtn = (
+    <button
+      key="close"
+      className="topbar-btn topbar-btn-close"
+      onClick={() => window.api.window.close()}
+      title="Close"
+      aria-label="Close"
+    >
+      <svg viewBox="0 0 10 10" width="10" height="10">
+        <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" />
+        <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" />
+      </svg>
+    </button>
+  )
+
   return (
     <div className={`topbar${isMac ? ' topbar-mac' : ''}`}>
       <div className="topbar-drag">
-        <span className="topbar-title">PixCom</span>
+        <span className="topbar-title">
+          PixCom
+          {version && <span className="topbar-version">v{version}</span>}
+        </span>
         <span className="topbar-subtitle">Load a website or image on each side, then drag the slider to check the match.</span>
       </div>
       <div className="topbar-controls">
@@ -59,44 +117,23 @@ export default function TopBar(): JSX.Element {
             {updating ? `Updating… ${updateProgress ?? 0}%` : `Update to v${updateVersion}`}
           </button>
         )}
-        <button
-          className="topbar-btn"
-          onClick={() => window.api.window.minimize()}
-          title="Minimize"
-          aria-label="Minimize"
-        >
-          <svg viewBox="0 0 10 10" width="10" height="10">
-            <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
-          </svg>
-        </button>
-        <button
-          className="topbar-btn"
-          onClick={() => window.api.window.toggleMaximize()}
-          title={maximized ? 'Restore' : 'Maximize'}
-          aria-label={maximized ? 'Restore' : 'Maximize'}
-        >
-          {maximized ? (
-            <svg viewBox="0 0 10 10" width="10" height="10">
-              <rect x="1.5" y="0" width="7" height="7" fill="none" stroke="currentColor" />
-              <rect x="0" y="2" width="7" height="7" fill="none" stroke="currentColor" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 10 10" width="10" height="10">
-              <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" />
-            </svg>
-          )}
-        </button>
-        <button
-          className="topbar-btn topbar-btn-close"
-          onClick={() => window.api.window.close()}
-          title="Close"
-          aria-label="Close"
-        >
-          <svg viewBox="0 0 10 10" width="10" height="10">
-            <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" />
-            <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" />
-          </svg>
-        </button>
+        {/* macOS traffic-light order is close, minimize, maximize (left to
+            right) — the opposite of the Windows/other convention. Moving
+            the whole group to the left (topbar-mac) doesn't reorder these
+            three relative to each other, so order them explicitly. */}
+        {isMac ? (
+          <>
+            {closeBtn}
+            {minimizeBtn}
+            {maximizeBtn}
+          </>
+        ) : (
+          <>
+            {minimizeBtn}
+            {maximizeBtn}
+            {closeBtn}
+          </>
+        )}
       </div>
     </div>
   )

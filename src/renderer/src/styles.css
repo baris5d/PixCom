@@ -74,6 +74,13 @@ body {
   flex-shrink: 0;
 }
 
+.topbar-version {
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #6c7180;
+}
+
 .topbar-subtitle {
   font-size: 11.5px;
   color: #6c7180;

@@ -19,6 +19,8 @@ export interface DiffResult {
 const api = {
   platform: process.platform,
 
+  getVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
+
   pickImage: (): Promise<SourceResult | null> => ipcRenderer.invoke('pick-image'),
 
   diffImages: (args: { leftDataUrl: string; rightDataUrl: string }): Promise<DiffResult> =>
