@@ -71,3 +71,51 @@ jobs:
         run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # electron-builder uploads release assets one at a time, and a transient
+  # failure partway through an upload (seen in practice with the large
+  # macOS .dmg) makes it abandon the release object it already created and
+  # start over — creating a second release for the same tag, with whatever
+  # had uploaded before the retry stranded on the first one. Both `release`
+  # matrix jobs already reuse a single release correctly when they succeed
+  # cleanly; this only cleans up the rarer per-job retry-duplicate case,
+  # instead of requiring someone to notice and delete it by hand.
+  cleanup-duplicate-releases:
+    needs: release
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep only the release with the most assets for this tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          ids=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"${tag}\") | .id")
+
+          count=$(echo "$ids" | grep -c . || true)
+          if [ "$count" -le 1 ]; then
+            echo "Only $count release(s) for $tag — nothing to clean up."
+            exit 0
+          fi
+
+          echo "Found $count releases for $tag — keeping the one with the most assets."
+          best_id=""
+          best_count=-1
+          for id in $ids; do
+            n=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${id}/assets" --jq 'length')
+            echo "  release $id has $n asset(s)"
+            if [ "$n" -gt "$best_count" ]; then
+              best_count="$n"
+              best_id="$id"
+            fi
+          done
+
+          echo "Keeping release $best_id ($best_count assets); deleting the rest."
+          for id in $ids; do
+            if [ "$id" != "$best_id" ]; then
+              echo "Deleting duplicate release $id"
+              gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}"
+            fi
+          done
