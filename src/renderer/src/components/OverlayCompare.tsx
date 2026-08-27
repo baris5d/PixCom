@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefO
 import LiveWebviewLayer, { type LiveWebviewHandle, type NavState } from './LiveWebviewLayer'
 import InspectPanel from './InspectPanel'
 import { SIZE_PRESETS, normalizeUrl } from '../presets'
+import { titleFor, type HistoryEntry, type SourceSnapshot, type TabSnapshot } from '../workspace'
 import type { InspectSelection, LoadedSource, SourceKind } from '../types'
 
 interface SideState {
@@ -14,37 +15,46 @@ interface SideState {
   image: LoadedSource | null
 }
 
-const initialSide: SideState = {
-  kind: 'url',
-  addressInput: '',
-  navigatedUrl: null,
-  navState: { canGoBack: false, canGoForward: false, url: null },
-  loading: false,
-  loadError: null,
-  image: null
+function sideStateFrom(s: SourceSnapshot): SideState {
+  return {
+    kind: s.kind,
+    addressInput: s.addressInput,
+    navigatedUrl: s.navigatedUrl,
+    navState: { canGoBack: false, canGoForward: false, url: null },
+    loading: false,
+    loadError: null,
+    image: null
+  }
 }
 
 type Side = 'left' | 'right'
 
-export default function OverlayCompare(): JSX.Element {
-  const [left, setLeft] = useState<SideState>(initialSide)
-  const [right, setRight] = useState<SideState>(initialSide)
+interface Props {
+  initial: TabSnapshot
+  onChange: (patch: Partial<TabSnapshot>) => void
+}
+
+export default function OverlayCompare({ initial, onChange }: Props): JSX.Element {
+  const [left, setLeft] = useState<SideState>(() => sideStateFrom(initial.left))
+  const [right, setRight] = useState<SideState>(() => sideStateFrom(initial.right))
   const leftRef = useRef<LiveWebviewHandle>(null)
   const rightRef = useRef<LiveWebviewHandle>(null)
 
-  const [activePreset, setActivePreset] = useState<string | null>(null)
-  const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
-  const [fitToWindow, setFitToWindow] = useState(true)
+  const [activePreset, setActivePreset] = useState<string | null>(initial.activePreset)
+  const [size, setSize] = useState(initial.size)
+  const [fitToWindow, setFitToWindow] = useState(initial.fitToWindow)
   const [zoom, setZoom] = useState(1)
   const [percent, setPercent] = useState(50)
-  const [syncScroll, setSyncScroll] = useState(true)
-  const [scrollSensitivity, setScrollSensitivity] = useState(0.5)
+  const [syncScroll, setSyncScroll] = useState(initial.syncScroll)
+  const [scrollSensitivity, setScrollSensitivity] = useState(initial.scrollSensitivity)
   const [swapped, setSwapped] = useState(false)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [historyOpenFor, setHistoryOpenFor] = useState<Side | null>(null)
   // Manual "canvas" zoom — a visual scale on top of whatever the stage's
   // own fit/preset sizing already is, like pinch-zooming a page in a
   // desktop browser. Independent of `zoom` above, which is the auto-fit
   // scale for device-size presets.
-  const [zoomSync, setZoomSync] = useState(true)
+  const [zoomSync, setZoomSync] = useState(initial.zoomSync)
   const [canvasZoom, setCanvasZoom] = useState<Record<Side, number>>({ left: 1, right: 1 })
   const [canvasPan, setCanvasPan] = useState<Record<Side, { x: number; y: number }>>({
     left: { x: 0, y: 0 },
@@ -52,7 +62,7 @@ export default function OverlayCompare(): JSX.Element {
   })
   const [pageMode, setPageMode] = useState<'compare' | 'interact' | 'inspect'>('compare')
   const [inspected, setInspected] = useState<Record<Side, InspectSelection | null>>({ left: null, right: null })
-  const [mode, setMode] = useState<'slider' | 'diff'>('slider')
+  const [mode, setMode] = useState<'slider' | 'diff'>(initial.mode)
   const [diffing, setDiffing] = useState(false)
   const [matchPercent, setMatchPercent] = useState<number | null>(null)
   const [diffDataUrl, setDiffDataUrl] = useState<string | null>(null)
@@ -105,6 +115,7 @@ export default function OverlayCompare(): JSX.Element {
     const url = normalizeUrl(target)
     setSide(side, { addressInput: url, navigatedUrl: url })
     ;(side === 'left' ? leftRef : rightRef).current?.navigate(url)
+    window.api.history.add(url).then(setHistory)
   }
 
   async function handlePickImage(side: Side): Promise<void> {
@@ -139,6 +150,66 @@ export default function OverlayCompare(): JSX.Element {
     observer.observe(container)
     return () => observer.disconnect()
   }, [fitToWindow, size.width, size.height])
+
+  // Restore whichever page(s) this tab had loaded last session — runs once
+  // on mount, using the `initial` prop's value as it was when the tab was
+  // created, not the live state (which by then only reflects the address
+  // bar text, not an actual navigated webview).
+  useEffect(() => {
+    if (initial.left.kind === 'url' && initial.left.navigatedUrl) {
+      leftRef.current?.navigate(initial.left.navigatedUrl)
+    }
+    if (initial.right.kind === 'url' && initial.right.navigatedUrl) {
+      rightRef.current?.navigate(initial.right.navigatedUrl)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    window.api.history.list().then(setHistory)
+  }, [])
+
+  // Reports a snapshot back up to whatever owns this tab (App.tsx), which
+  // persists it to disk — debounced so rapid typing/dragging doesn't
+  // trigger a disk write per keystroke. onChange is read through a ref so
+  // a new function identity from the parent each render doesn't restart
+  // the debounce timer.
+  const onChangeRef = useRef(onChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onChangeRef.current({
+        title: titleFor(left, right),
+        left: { kind: left.kind, addressInput: left.addressInput, navigatedUrl: left.navigatedUrl },
+        right: { kind: right.kind, addressInput: right.addressInput, navigatedUrl: right.navigatedUrl },
+        fitToWindow,
+        size,
+        activePreset,
+        syncScroll,
+        scrollSensitivity,
+        zoomSync,
+        mode
+      })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [
+    left.kind,
+    left.addressInput,
+    left.navigatedUrl,
+    right.kind,
+    right.addressInput,
+    right.navigatedUrl,
+    fitToWindow,
+    size,
+    activePreset,
+    syncScroll,
+    scrollSensitivity,
+    zoomSync,
+    mode
+  ])
 
   // Re-applied whenever a side (re)navigates too, since a fresh page load
   // wipes whatever the previously-injected inspector script had set up.
@@ -456,6 +527,51 @@ export default function OverlayCompare(): JSX.Element {
             >
               Go
             </button>
+            <div className="history-dropdown">
+              <button
+                className="nav-btn"
+                onClick={() => setHistoryOpenFor(historyOpenFor === side ? null : side)}
+                title="History"
+                aria-label="History"
+              >
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="6.3" />
+                  <path d="M8 4.8 V8 L10.3 9.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {historyOpenFor === side && (
+                <>
+                  <div className="theme-dropdown-scrim" onClick={() => setHistoryOpenFor(null)} />
+                  <div className="history-dropdown-list">
+                    {history.length === 0 && <div className="history-empty">No history yet</div>}
+                    {history.map((entry) => (
+                      <button
+                        key={entry.url}
+                        className="history-dropdown-item"
+                        onClick={() => {
+                          navigate(side, entry.url)
+                          setHistoryOpenFor(null)
+                        }}
+                        title={entry.url}
+                      >
+                        {entry.url}
+                      </button>
+                    ))}
+                    {history.length > 0 && (
+                      <button
+                        className="history-dropdown-clear"
+                        onClick={() => {
+                          window.api.history.clear()
+                          setHistory([])
+                        }}
+                      >
+                        Clear history
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="image-form">

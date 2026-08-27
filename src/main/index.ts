@@ -12,6 +12,8 @@ import {
   revealCustomTheme,
   saveCustomTheme
 } from './themes'
+import { addHistoryEntry, clearHistory, loadHistory } from './history'
+import { loadWorkspace, saveWorkspace, type WorkspaceSnapshot } from './workspace'
 
 // Electron's default UA includes an "Electron/x.y.z" token that some
 // bot-protection services (Akamai, Cloudflare, etc.) block outright.
@@ -139,6 +141,17 @@ function registerWhatsNewHandler(): void {
   ipcMain.handle('app:whats-new', () => whatsNewInfo)
 }
 
+function registerHistoryHandlers(): void {
+  ipcMain.handle('history:list', () => loadHistory())
+  ipcMain.handle('history:add', (_event, url: string) => addHistoryEntry(url))
+  ipcMain.on('history:clear', () => clearHistory())
+}
+
+function registerWorkspaceHandlers(): void {
+  ipcMain.handle('workspace:load', () => loadWorkspace())
+  ipcMain.on('workspace:save', (_event, snapshot: WorkspaceSnapshot) => saveWorkspace(snapshot))
+}
+
 function registerThemeHandlers(): void {
   ipcMain.handle('themes:list-custom', () => listCustomThemes())
   ipcMain.handle('themes:save-custom', (_event, name: string, colors: Record<string, string>) =>
@@ -164,6 +177,8 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerThemeHandlers()
   registerWhatsNewHandler()
+  registerHistoryHandlers()
+  registerWorkspaceHandlers()
   registerUpdater()
   createWindow()
 

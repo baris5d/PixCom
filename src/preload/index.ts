@@ -34,6 +34,11 @@ export interface CustomThemeFile {
   colors: Record<string, string>
 }
 
+export interface HistoryEntry {
+  url: string
+  visitedAt: number
+}
+
 const api = {
   platform: process.platform,
 
@@ -93,6 +98,17 @@ const api = {
     revealCustom: (id: string): void => ipcRenderer.send('themes:reveal-custom', id),
     export: (name: string, colors: Record<string, string>): Promise<string | null> =>
       ipcRenderer.invoke('themes:export', name, colors)
+  },
+
+  history: {
+    list: (): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:list'),
+    add: (url: string): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:add', url),
+    clear: (): void => ipcRenderer.send('history:clear')
+  },
+
+  workspace: {
+    load: (): Promise<unknown> => ipcRenderer.invoke('workspace:load'),
+    save: (snapshot: unknown): void => ipcRenderer.send('workspace:save', snapshot)
   }
 }
 
