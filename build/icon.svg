@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2e3d"/>
+      <stop offset="1" stop-color="#14151b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="28%" cy="18%" r="55%">
+      <stop offset="0" stop-color="#7c9cff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#7c9cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leftPane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#cfd5f2"/>
+      <stop offset="1" stop-color="#9aa4d6"/>
+    </linearGradient>
+    <linearGradient id="rightPane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6c7bd1"/>
+      <stop offset="1" stop-color="#43509e"/>
+    </linearGradient>
+    <clipPath id="stageClip">
+      <rect x="192" y="272" width="640" height="480" rx="48"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" rx="185" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="185" fill="url(#glow)"/>
+
+  <g clip-path="url(#stageClip)">
+    <rect x="192" y="272" width="640" height="480" fill="url(#rightPane)"/>
+    <rect x="192" y="272" width="320" height="480" fill="url(#leftPane)"/>
+  </g>
+  <rect x="194" y="274" width="636" height="476" rx="46" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="4"/>
+
+  <line x1="512" y1="272" x2="512" y2="752" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="512" cy="512" r="56" fill="#ffffff"/>
+  <circle cx="512" cy="512" r="56" fill="none" stroke="rgba(20,21,27,0.15)" stroke-width="3"/>
+  <polyline points="500,494 484,512 500,530" fill="none" stroke="#4a56a8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="524,494 540,512 524,530" fill="none" stroke="#4a56a8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
