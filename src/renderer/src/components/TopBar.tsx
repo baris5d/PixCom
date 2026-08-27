@@ -160,16 +160,13 @@ export default function TopBar(): JSX.Element {
         title="Settings"
         aria-label="Settings"
       >
-        <svg viewBox="0 0 16 16" width="16" height="16">
-          {/* Filled 8-tooth gear silhouette with a punched-out center hole
-              (evenodd fill rule) — verified legible even at 16px, unlike
-              the earlier dashed-ring attempt which read as a sun/aperture
-              icon. */}
-          <path
-            fill="currentColor"
-            fillRule="evenodd"
-            d="M8.00,3.00 L8.86,3.07 L9.24,0.91 L11.37,1.64 L10.34,3.58 L11.54,4.46 L12.09,5.12 L13.89,3.86 L14.88,5.88 L12.78,6.53 L13.00,8.00 L12.93,8.86 L15.09,9.24 L14.36,11.37 L12.42,10.34 L11.54,11.54 L10.88,12.09 L12.14,13.89 L10.12,14.88 L9.47,12.78 L8.00,13.00 L7.14,12.93 L6.76,15.09 L4.63,14.36 L5.66,12.42 L4.46,11.54 L3.91,10.88 L2.11,12.14 L1.12,10.12 L3.22,9.47 L3.00,8.00 L3.07,7.14 L0.91,6.76 L1.64,4.63 L3.58,5.66 L4.46,4.46 L5.12,3.91 L3.86,2.11 L5.88,1.12 L6.53,3.22 L8.00,3.00 Z M8,6.2 a1.8,1.8 0 1,0 0,3.6 a1.8,1.8 0 1,0 0,-3.6 Z"
-          />
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" fillRule="evenodd">
+          {/* Two overlapping gears (big + small), same glyph VS Code uses
+              for settings — a single gear kept reading as a sun/aperture
+              (theme toggle) icon instead. Verified legible at both large
+              size and the actual ~16px render size. */}
+          <path d="M6.20,5.10 L6.97,5.17 L7.23,3.69 L9.01,4.30 L8.31,5.62 L9.38,6.42 L9.88,7.01 L11.11,6.15 L11.93,7.84 L10.50,8.28 L10.70,9.60 L10.63,10.37 L12.11,10.63 L11.50,12.41 L10.18,11.71 L9.38,12.78 L8.79,13.28 L9.65,14.51 L7.96,15.33 L7.52,13.90 L6.20,14.10 L5.43,14.03 L5.17,15.51 L3.39,14.90 L4.09,13.58 L3.02,12.78 L2.52,12.19 L1.29,13.05 L0.47,11.36 L1.90,10.92 L1.70,9.60 L1.77,8.83 L0.29,8.57 L0.90,6.79 L2.22,7.49 L3.02,6.42 L3.61,5.92 L2.75,4.69 L4.44,3.87 L4.88,5.30 L6.20,5.10 Z M4.50,9.60 a1.7,1.7 0 1,0 3.40,0 a1.7,1.7 0 1,0 -3.40,0 Z" />
+          <path d="M11.60,2.10 L12.26,2.18 L12.51,1.11 L14.02,1.81 L13.35,2.69 L14.11,3.55 L14.38,4.16 L15.43,3.84 L15.57,5.50 L14.48,5.36 L14.11,6.45 L13.71,6.99 L14.52,7.74 L13.15,8.69 L12.72,7.67 L11.60,7.90 L10.94,7.82 L10.69,8.89 L9.18,8.19 L9.85,7.31 L9.09,6.45 L8.82,5.84 L7.77,6.16 L7.63,4.50 L8.72,4.64 L9.09,3.55 L9.49,3.01 L8.68,2.26 L10.05,1.31 L10.48,2.33 L11.60,2.10 Z M10.50,5.00 a1.1,1.1 0 1,0 2.20,0 a1.1,1.1 0 1,0 -2.20,0 Z" />
         </svg>
       </button>
     </div>
