@@ -85,6 +85,9 @@ function registerWindowControlHandlers(): void {
   ipcMain.on('window:close', (event) => windowOf(event)?.close())
   ipcMain.handle('window:is-maximized', (event) => windowOf(event)?.isMaximized() ?? false)
   ipcMain.handle('app:get-version', () => app.getVersion())
+  ipcMain.on('shell:open-external', (_event, url: string) => {
+    if (url.startsWith('https://')) shell.openExternal(url)
+  })
 }
 
 function registerSettingsHandlers(): void {

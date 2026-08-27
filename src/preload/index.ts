@@ -25,6 +25,8 @@ const api = {
 
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
 
+  openExternal: (url: string): void => ipcRenderer.send('shell:open-external', url),
+
   pickImage: (): Promise<SourceResult | null> => ipcRenderer.invoke('pick-image'),
 
   diffImages: (args: { leftDataUrl: string; rightDataUrl: string }): Promise<DiffResult> =>

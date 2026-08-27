@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import SettingsScreen from './SettingsScreen'
 
 // The window is frameless (see main/index.ts) so this bar is the *only*
 // title bar there is — it owns the drag region and the window controls,
@@ -159,9 +160,10 @@ export default function TopBar(): JSX.Element {
         title="Settings"
         aria-label="Settings"
       >
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <circle cx="8" cy="8" r="2.4" />
-          <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4" />
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor">
+          {/* Dashed ring reads as gear teeth around a center hole. */}
+          <circle cx="8" cy="8" r="6" strokeWidth="2.6" strokeDasharray="2.3 2.3" />
+          <circle cx="8" cy="8" r="2.1" strokeWidth="1.4" />
         </svg>
       </button>
     </div>
@@ -207,20 +209,12 @@ export default function TopBar(): JSX.Element {
       )}
 
       {settingsOpen && (
-        <div className="modal-overlay" onClick={() => setSettingsOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>Settings</h3>
-            <label className="settings-row">
-              <input type="checkbox" checked={autoUpdateCheck} onChange={toggleAutoUpdateCheck} />
-              Automatically check for updates
-            </label>
-            <div className="modal-actions">
-              <button className="modal-btn-primary" onClick={() => setSettingsOpen(false)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+        <SettingsScreen
+          version={version}
+          autoUpdateCheck={autoUpdateCheck}
+          onToggleAutoUpdateCheck={toggleAutoUpdateCheck}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
     </div>
   )

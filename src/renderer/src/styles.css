@@ -208,6 +208,124 @@ body {
   accent-color: #7a8bd6;
 }
 
+.settings-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8b8f9c;
+}
+
+.settings-link {
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a3b1e7;
+  font-size: 12.5px;
+}
+
+.settings-link:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* ---------- settings screen (VS Code–style: sidebar + content) ---------- */
+
+.settings-screen {
+  width: min(90vw, 640px);
+  height: min(80vh, 440px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(26, 26, 33, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.settings-screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.settings-screen-header h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #eef0f8;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #9298ab;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 8px;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e4e6ee;
+}
+
+.settings-screen-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.settings-sidebar {
+  width: 170px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-y: auto;
+}
+
+.settings-sidebar button {
+  justify-content: flex-start;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #b8bdcf;
+}
+
+.settings-sidebar button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-sidebar button.active {
+  background: rgba(122, 139, 214, 0.25);
+  border-color: rgba(163, 177, 227, 0.3);
+  color: #eef0f8;
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.settings-content h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9298ab;
+}
+
 /* ---------- glass surfaces ---------- */
 
 .source-picker,
