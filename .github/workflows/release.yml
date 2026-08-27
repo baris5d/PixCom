@@ -5,16 +5,6 @@ name: Release
 # secrets below); Windows build is unsigned unless WIN_CSC_LINK/
 # WIN_CSC_KEY_PASSWORD secrets are also added (see README "Distributing to
 # non-technical users").
-#
-# Build and publish are deliberately separate jobs: each platform job only
-# builds (electron-builder locally, never --publish), uploads its installer
-# as a plain GitHub Actions artifact, and a single final job creates the
-# release with everything via `gh release create`. Two platform jobs each
-# calling electron-builder's own --publish against the same release
-# repeatedly dropped assets (whichever ran second sometimes uploaded
-# nothing, or only partially) no matter how the jobs were serialized —
-# this sidesteps that flakiness entirely by only ever creating the release
-# once, with every file already in hand.
 on:
   push:
     tags:
@@ -24,41 +14,51 @@ permissions:
   contents: write
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  release:
+    strategy:
+      # Without this, GitHub Actions cancels the other platform's still-running
+      # job the moment either one fails — a mac signing hiccup shouldn't take
+      # down an otherwise-fine Windows build, and vice versa.
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    # Both platforms publish to the SAME GitHub Release for this tag.
+    # electron-builder's publish step isn't safe to run concurrently against
+    # one release (it can create/finalize the release object itself, and two
+    # of those racing can silently drop whichever platform's assets lost the
+    # race) — this group is identical across the matrix (no matrix.os in the
+    # key) so the two jobs queue one after another instead of running at once.
+    concurrency:
+      group: release-publish-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - run: npm ci
+
       - run: npm run typecheck
-      - name: Build (macOS)
-        run: npm run dist
+
+      # Split by OS (rather than one step with every env var) so the mac
+      # signing vars are never even present in the Windows job's
+      # environment — electron-builder can fall back to a shared CSC_LINK
+      # across platforms if a platform-specific one is absent, and mixing
+      # them up would mean signing the Windows exe with a macOS cert.
+      - name: Build and publish (macOS)
+        if: runner.os == 'macOS'
+        run: npm run release
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos-installer
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
-            dist/latest-mac.yml
 
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run typecheck
       # No WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD here on purpose: an unset
       # GitHub secret resolves to an empty string rather than being
       # absent, and electron-builder treats a *present but empty*
@@ -66,37 +66,8 @@ jobs:
       # path" rather than "no signing" — which fails the build outright.
       # Once you have a Windows code signing cert, add both under `env:`
       # below (see README for what they should be).
-      - name: Build (Windows)
-        run: npm run dist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          path: |
-            dist/*.exe
-            dist/*.blockmap
-            dist/latest.yml
-
-  publish:
-    needs: [build-macos, build-windows]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: macos-installer
-          path: release-assets
-      - uses: actions/download-artifact@v4
-        with:
-          name: windows-installer
-          path: release-assets
-      - name: Create release
+      - name: Build and publish (Windows)
+        if: runner.os == 'Windows'
+        run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Delete-then-create so re-running this workflow for a tag that
-          # already has a (possibly broken, from a prior flaky run) release
-          # just replaces it cleanly instead of failing with "already exists".
-          gh release delete "${{ github.ref_name }}" --repo "${{ github.repository }}" --yes || true
-          gh release create "${{ github.ref_name }}" release-assets/* \
-            --repo "${{ github.repository }}" \
-            --title "${{ github.ref_name }}" \
-            --generate-notes
