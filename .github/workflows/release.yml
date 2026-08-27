@@ -16,6 +16,10 @@ permissions:
 jobs:
   release:
     strategy:
+      # Without this, GitHub Actions cancels the other platform's still-running
+      # job the moment either one fails — a mac signing hiccup shouldn't take
+      # down an otherwise-fine Windows build, and vice versa.
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
