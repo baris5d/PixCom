@@ -80,6 +80,12 @@ scroll position and runs a pixel-diff (via `pixelmatch`); the result is shown as
 badge. ("Diff overlay" — visually highlighting mismatched pixels on the stage — is
 currently disabled.)
 
+**Updating.** A packaged build checks GitHub Releases for a newer version on
+launch. When one exists, an "Update to vX.Y.Z" button appears in the top bar —
+clicking it downloads the update and relaunches the app on the new version, no
+further steps needed. (Only applies to installed builds; `npm run dev` never
+checks.)
+
 ## Build
 
 ```bash

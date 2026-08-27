@@ -52,6 +52,11 @@ body {
   -webkit-app-region: drag;
 }
 
+.topbar-mac {
+  flex-direction: row-reverse;
+  padding: 0 16px 0 12px;
+}
+
 .topbar-drag {
   flex: 1;
   min-width: 0;
@@ -106,6 +111,23 @@ body {
 .topbar-btn-close:hover {
   background: rgba(224, 90, 90, 0.85);
   color: white;
+}
+
+.topbar-update-btn {
+  -webkit-app-region: no-drag;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #eef0f8;
+  background: rgba(94, 168, 128, 0.28);
+  border: 1px solid rgba(140, 200, 165, 0.4);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.topbar-update-btn:hover:not(:disabled) {
+  background: rgba(94, 168, 128, 0.4);
 }
 
 /* ---------- glass surfaces ---------- */

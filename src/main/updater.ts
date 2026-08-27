@@ -1,0 +1,46 @@
+import { app, ipcMain, type BrowserWindow } from 'electron'
+import { autoUpdater } from 'electron-updater'
+
+// electron-builder already publishes latest.yml/latest-mac.yml alongside
+// every GitHub release (see package.json's `publish` config), which is all
+// electron-updater needs to check for and fetch updates — no extra server.
+let activeWindow: BrowserWindow | null = null
+
+export function setUpdaterWindow(window: BrowserWindow): void {
+  activeWindow = window
+}
+
+// One-click update: the renderer shows a button once `update-available`
+// fires; clicking it downloads the update, and the moment it's fully
+// downloaded the app quits and installs it automatically — no second
+// "restart now?" step for the user.
+export function registerUpdater(): void {
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('update-available', (info) => {
+    activeWindow?.webContents.send('updater:available', info.version)
+  })
+  autoUpdater.on('download-progress', (progress) => {
+    activeWindow?.webContents.send('updater:progress', Math.round(progress.percent))
+  })
+  autoUpdater.on('update-downloaded', () => {
+    autoUpdater.quitAndInstall()
+  })
+  autoUpdater.on('error', (err) => {
+    activeWindow?.webContents.send('updater:error', err.message)
+  })
+
+  ipcMain.on('updater:install', () => {
+    autoUpdater.downloadUpdate().catch((err) => {
+      activeWindow?.webContents.send('updater:error', err instanceof Error ? err.message : String(err))
+    })
+  })
+
+  // Only meaningful for a packaged build — dev runs have no app-update.yml
+  // and aren't versioned against a real release anyway.
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates().catch(() => {
+      /* offline, rate-limited, or no releases yet — nothing to surface */
+    })
+  }
+}

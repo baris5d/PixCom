@@ -6,19 +6,59 @@ import { useEffect, useState } from 'react'
 // chrome bolted on top of it.
 export default function TopBar(): JSX.Element {
   const [maximized, setMaximized] = useState(false)
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [updateProgress, setUpdateProgress] = useState<number | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const [updateError, setUpdateError] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.window.isMaximized().then(setMaximized)
     return window.api.window.onMaximizedChanged(setMaximized)
   }, [])
 
+  useEffect(() => {
+    const offAvailable = window.api.updater.onAvailable(setUpdateVersion)
+    const offProgress = window.api.updater.onProgress(setUpdateProgress)
+    const offError = window.api.updater.onError((message) => {
+      setUpdating(false)
+      setUpdateError(message)
+    })
+    return () => {
+      offAvailable()
+      offProgress()
+      offError()
+    }
+  }, [])
+
+  function handleUpdateClick(): void {
+    setUpdateError(null)
+    setUpdating(true)
+    window.api.updater.install()
+  }
+
+  // macOS convention: window controls sit at the top-left, title/subtitle
+  // fill the rest to the right. Windows convention (and everything else)
+  // keeps controls on the right. CSS row-reverse flips visual order
+  // without touching which element is which.
+  const isMac = window.api.platform === 'darwin'
+
   return (
-    <div className="topbar">
+    <div className={`topbar${isMac ? ' topbar-mac' : ''}`}>
       <div className="topbar-drag">
         <span className="topbar-title">PixCom</span>
         <span className="topbar-subtitle">Load a website or image on each side, then drag the slider to check the match.</span>
       </div>
       <div className="topbar-controls">
+        {updateVersion && (
+          <button
+            className="topbar-update-btn"
+            onClick={handleUpdateClick}
+            disabled={updating}
+            title={updateError ?? `Update to v${updateVersion} and restart`}
+          >
+            {updating ? `Updating… ${updateProgress ?? 0}%` : `Update to v${updateVersion}`}
+          </button>
+        )}
         <button
           className="topbar-btn"
           onClick={() => window.api.window.minimize()}

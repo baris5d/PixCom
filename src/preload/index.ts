@@ -17,6 +17,8 @@ export interface DiffResult {
 }
 
 const api = {
+  platform: process.platform,
+
   pickImage: (): Promise<SourceResult | null> => ipcRenderer.invoke('pick-image'),
 
   diffImages: (args: { leftDataUrl: string; rightDataUrl: string }): Promise<DiffResult> =>
@@ -31,6 +33,25 @@ const api = {
       const listener = (_event: unknown, maximized: boolean): void => callback(maximized)
       ipcRenderer.on('window:maximized-changed', listener)
       return () => ipcRenderer.removeListener('window:maximized-changed', listener)
+    }
+  },
+
+  updater: {
+    install: (): void => ipcRenderer.send('updater:install'),
+    onAvailable: (callback: (version: string) => void): (() => void) => {
+      const listener = (_event: unknown, version: string): void => callback(version)
+      ipcRenderer.on('updater:available', listener)
+      return () => ipcRenderer.removeListener('updater:available', listener)
+    },
+    onProgress: (callback: (percent: number) => void): (() => void) => {
+      const listener = (_event: unknown, percent: number): void => callback(percent)
+      ipcRenderer.on('updater:progress', listener)
+      return () => ipcRenderer.removeListener('updater:progress', listener)
+    },
+    onError: (callback: (message: string) => void): (() => void) => {
+      const listener = (_event: unknown, message: string): void => callback(message)
+      ipcRenderer.on('updater:error', listener)
+      return () => ipcRenderer.removeListener('updater:error', listener)
     }
   }
 }

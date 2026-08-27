@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
+import { registerUpdater, setUpdaterWindow } from './updater'
 
 // Electron's default UA includes an "Electron/x.y.z" token that some
 // bot-protection services (Akamai, Cloudflare, etc.) block outright.
@@ -32,6 +33,8 @@ function createWindow(): void {
   }
   mainWindow.on('maximize', notifyMaximizedChanged)
   mainWindow.on('unmaximize', notifyMaximizedChanged)
+
+  setUpdaterWindow(mainWindow)
 
   // Defense in depth: guests created by our own renderer via <webview> are
   // trusted, but keep them isolated and force the spoofed UA regardless of
@@ -91,6 +94,7 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   registerWindowControlHandlers()
+  registerUpdater()
   createWindow()
 
   app.on('activate', () => {
