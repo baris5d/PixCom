@@ -480,11 +480,7 @@ export default function OverlayCompare(): JSX.Element {
               <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
                 Slider
               </button>
-              <button
-                className={mode === 'diff' ? 'active' : ''}
-                onClick={() => setMode('diff')}
-                disabled={!diffDataUrl}
-              >
+              <button className={mode === 'diff' ? 'active' : ''} disabled title="Temporarily disabled">
                 Diff overlay
               </button>
             </div>
