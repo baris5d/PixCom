@@ -23,6 +23,15 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    # Both platforms publish to the SAME GitHub Release for this tag.
+    # electron-builder's publish step isn't safe to run concurrently against
+    # one release (it can create/finalize the release object itself, and two
+    # of those racing can silently drop whichever platform's assets lost the
+    # race) — this group is identical across the matrix (no matrix.os in the
+    # key) so the two jobs queue one after another instead of running at once.
+    concurrency:
+      group: release-publish-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
