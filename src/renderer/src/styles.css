@@ -44,17 +44,11 @@ body {
   height: 44px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 0 12px 0 16px;
+  padding: 0 12px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   -webkit-app-region: drag;
-}
-
-.topbar-mac {
-  flex-direction: row-reverse;
-  padding: 0 16px 0 12px;
 }
 
 .topbar-drag {
@@ -89,7 +83,8 @@ body {
   white-space: nowrap;
 }
 
-.topbar-controls {
+.topbar-window-controls,
+.topbar-actions {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -137,60 +132,13 @@ body {
   background: rgba(94, 168, 128, 0.4);
 }
 
-/* ---------- settings popover ---------- */
-
-.settings-anchor {
-  position: relative;
-  -webkit-app-region: no-drag;
+.topbar-settings-btn {
+  font-size: 15px;
 }
 
-.settings-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 1099;
-}
+/* ---------- modals (update available, settings) ---------- */
 
-.settings-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 1100;
-  width: 260px;
-  padding: 12px;
-  background: rgba(24, 24, 30, 0.97);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-
-.settings-popover-title {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9298ab;
-  margin-bottom: 10px;
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #d7dae2;
-  cursor: pointer;
-}
-
-.settings-row input {
-  accent-color: #7a8bd6;
-}
-
-/* ---------- update modal ---------- */
-
-.update-modal-overlay {
+.modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 1200;
@@ -201,7 +149,7 @@ body {
   -webkit-app-region: no-drag;
 }
 
-.update-modal {
+.modal-card {
   width: min(90vw, 380px);
   padding: 22px 24px;
   background: rgba(26, 26, 33, 0.97);
@@ -212,38 +160,52 @@ body {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
 
-.update-modal h3 {
+.modal-card h3 {
   margin: 0 0 8px;
   font-size: 16px;
   color: #eef0f8;
 }
 
-.update-modal p {
+.modal-card p {
   margin: 0 0 18px;
   font-size: 13px;
   line-height: 1.5;
   color: #b8bdcf;
 }
 
-.update-modal-actions {
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 18px;
 }
 
-.update-modal-later {
+.modal-btn-secondary {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.update-modal-primary {
+.modal-btn-primary {
   background: rgba(94, 168, 128, 0.32);
   border-color: rgba(140, 200, 165, 0.45);
   color: #eef0f8;
   font-weight: 600;
 }
 
-.update-modal-primary:hover:not(:disabled) {
+.modal-btn-primary:hover:not(:disabled) {
   background: rgba(94, 168, 128, 0.45);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d7dae2;
+  cursor: pointer;
+}
+
+.settings-row input {
+  accent-color: #7a8bd6;
 }
 
 /* ---------- glass surfaces ---------- */

@@ -57,17 +57,19 @@ export default function TopBar(): JSX.Element {
     window.api.settings.set({ autoUpdateCheck: next })
   }
 
-  // macOS convention: window controls sit at the top-left, title/subtitle
-  // fill the rest to the right. Windows convention (and everything else)
-  // keeps controls on the right. CSS row-reverse flips visual order
-  // without touching which element is which.
+  // macOS convention: window controls sit at the top-left; everywhere else
+  // they sit at the top-right. Rather than fight that with CSS direction
+  // tricks, the bar is built as three explicit slots — window controls,
+  // the flexible title/drag region, and the update+settings actions —
+  // ordered directly so the actions always land on the side opposite the
+  // window controls, on either platform.
   const isMac = window.api.platform === 'darwin'
 
   // The topbar button alone is easy to miss, so a modal grabs attention
   // the moment an update is found. It can be dismissed (still reachable
   // via the small button) unless a download is actively in progress, so
   // the user isn't left wondering whether the app just quit on its own.
-  const showModal = updateVersion !== null && (updating || updateError !== null || !modalDismissed)
+  const showUpdateModal = updateVersion !== null && (updating || updateError !== null || !modalDismissed)
 
   const minimizeBtn = (
     <button
@@ -119,83 +121,102 @@ export default function TopBar(): JSX.Element {
     </button>
   )
 
-  return (
-    <div className={`topbar${isMac ? ' topbar-mac' : ''}`}>
-      <div className="topbar-drag">
-        <span className="topbar-title">
-          PixCom
-          {version && <span className="topbar-version">v{version}</span>}
-        </span>
-        <span className="topbar-subtitle">Load a website or image on each side, then drag the slider to check the match.</span>
-      </div>
-      <div className="topbar-controls">
-        {updateVersion && (
-          <button
-            className="topbar-update-btn"
-            onClick={handleUpdateClick}
-            disabled={updating}
-            title={updateError ?? `Update to v${updateVersion} and restart`}
-          >
-            {updating ? `Updating… ${updateProgress ?? 0}%` : `Update to v${updateVersion}`}
-          </button>
-        )}
-        <div className="settings-anchor">
-          <button
-            className="topbar-btn"
-            onClick={() => setSettingsOpen((open) => !open)}
-            title="Settings"
-            aria-label="Settings"
-          >
-            ⚙
-          </button>
-          {settingsOpen && (
-            <>
-              <div className="settings-scrim" onClick={() => setSettingsOpen(false)} />
-              <div className="settings-popover">
-                <span className="settings-popover-title">Settings</span>
-                <label className="settings-row">
-                  <input type="checkbox" checked={autoUpdateCheck} onChange={toggleAutoUpdateCheck} />
-                  Automatically check for updates
-                </label>
-              </div>
-            </>
-          )}
-        </div>
-        {/* macOS traffic-light order is close, minimize, maximize (left to
-            right) — the opposite of the Windows/other convention. Moving
-            the whole group to the left (topbar-mac) doesn't reorder these
-            three relative to each other, so order them explicitly. */}
-        {isMac ? (
-          <>
-            {closeBtn}
-            {minimizeBtn}
-            {maximizeBtn}
-          </>
-        ) : (
-          <>
-            {minimizeBtn}
-            {maximizeBtn}
-            {closeBtn}
-          </>
-        )}
-      </div>
+  const windowControls = (
+    <div className="topbar-window-controls">
+      {/* macOS traffic-light order is close, minimize, maximize (left to
+          right) — the opposite of the Windows/other convention. */}
+      {isMac ? (
+        <>
+          {closeBtn}
+          {minimizeBtn}
+          {maximizeBtn}
+        </>
+      ) : (
+        <>
+          {minimizeBtn}
+          {maximizeBtn}
+          {closeBtn}
+        </>
+      )}
+    </div>
+  )
 
-      {showModal && (
-        <div className="update-modal-overlay">
-          <div className="update-modal">
+  const actions = (
+    <div className="topbar-actions">
+      {updateVersion && (
+        <button
+          className="topbar-update-btn"
+          onClick={handleUpdateClick}
+          disabled={updating}
+          title={updateError ?? `Update to v${updateVersion} and restart`}
+        >
+          {updating ? `Updating… ${updateProgress ?? 0}%` : `Update to v${updateVersion}`}
+        </button>
+      )}
+      <button
+        className="topbar-btn topbar-settings-btn"
+        onClick={() => setSettingsOpen(true)}
+        title="Settings"
+        aria-label="Settings"
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4">
+          <circle cx="8" cy="8" r="2.4" />
+          <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4" />
+        </svg>
+      </button>
+    </div>
+  )
+
+  const titleGroup = (
+    <div className="topbar-drag">
+      <span className="topbar-title">
+        PixCom
+        {version && <span className="topbar-version">v{version}</span>}
+      </span>
+      <span className="topbar-subtitle">Load a website or image on each side, then drag the slider to check the match.</span>
+    </div>
+  )
+
+  return (
+    <div className="topbar">
+      {isMac ? windowControls : actions}
+      {titleGroup}
+      {isMac ? actions : windowControls}
+
+      {showUpdateModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
             <h3>Update available</h3>
             <p>
-              Version {updateVersion} is ready to install. {updating ? 'Downloading now — the app will restart automatically once it’s done.' : ''}
+              Version {updateVersion} is ready to install.{' '}
+              {updating ? 'Downloading now — the app will restart automatically once it’s done.' : ''}
             </p>
             {updateError && <p className="error">{updateError}</p>}
-            <div className="update-modal-actions">
+            <div className="modal-actions">
               {!updating && (
-                <button className="update-modal-later" onClick={() => setModalDismissed(true)}>
+                <button className="modal-btn-secondary" onClick={() => setModalDismissed(true)}>
                   Later
                 </button>
               )}
-              <button className="update-modal-primary" onClick={handleUpdateClick} disabled={updating}>
+              <button className="modal-btn-primary" onClick={handleUpdateClick} disabled={updating}>
                 {updating ? `Updating… ${updateProgress ?? 0}%` : 'Update now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="modal-overlay" onClick={() => setSettingsOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Settings</h3>
+            <label className="settings-row">
+              <input type="checkbox" checked={autoUpdateCheck} onChange={toggleAutoUpdateCheck} />
+              Automatically check for updates
+            </label>
+            <div className="modal-actions">
+              <button className="modal-btn-primary" onClick={() => setSettingsOpen(false)}>
+                Done
               </button>
             </div>
           </div>
