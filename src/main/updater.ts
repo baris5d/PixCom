@@ -1,5 +1,10 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
-import { autoUpdater } from 'electron-updater'
+// electron-updater is CommonJS; under Node's ESM loader (this project is
+// "type": "module") the named export doesn't reliably resolve at runtime
+// in a packaged build even though it type-checks and builds fine locally
+// — import the default and destructure instead.
+import electronUpdater from 'electron-updater'
+const { autoUpdater } = electronUpdater
 
 // electron-builder already publishes latest.yml/latest-mac.yml alongside
 // every GitHub release (see package.json's `publish` config), which is all
