@@ -32,12 +32,15 @@ jobs:
 
       - run: npm run typecheck
 
+      # No WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD env vars here on purpose: an
+      # unset GitHub secret resolves to an empty string rather than being
+      # absent, and electron-builder treats a *present but empty*
+      # WIN_CSC_LINK as "resolve this empty string as a certificate file
+      # path" rather than "no signing" — which fails the build outright.
+      # Once you have a Windows code signing cert, add both lines back
+      # under `env:` below (see README "Distributing to non-technical
+      # users" for what they should be).
       - name: Build and publish
         run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional Windows code signing — omit these secrets to ship an
-          # unsigned .exe; recipients will see a one-time SmartScreen
-          # "unknown publisher" warning (click "More info" -> "Run anyway").
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
