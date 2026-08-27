@@ -84,7 +84,76 @@ currently disabled.)
 
 ```bash
 npm run build   # bundles main/preload/renderer
-npm run dist     # packages an installable app via electron-builder
+npm run dist     # packages an installable app (.dmg/.zip on macOS, .exe on Windows) locally
+```
+
+`npm run dist` produces an installer under `dist/` for whichever OS you run it on —
+useful for testing packaging locally, but not signed/notarized (see below).
+
+## Distributing to non-technical users
+
+The goal: people who've never touched a terminal can download and run this without
+cloning the repo or installing Node. Two pieces make that work — a CI pipeline that
+builds signed installers and publishes them to GitHub Releases, and (optionally) a
+Homebrew Cask on top of that for people who already use `brew`.
+
+### One-time setup
+
+In this repo's GitHub settings → Secrets and variables → Actions, add:
+
+| Secret | What it's for |
+| --- | --- |
+| `CSC_LINK` | Base64 of your Apple **Developer ID Application** certificate (`.p12`): `base64 -i cert.p12 \| pbcopy` |
+| `CSC_KEY_PASSWORD` | The `.p12`'s export password |
+| `APPLE_ID` | The Apple ID (email) tied to that certificate |
+| `APPLE_APP_SPECIFIC_PASSWORD` | An [app-specific password](https://support.apple.com/en-us/102654) for that Apple ID (not your normal login password) |
+| `APPLE_TEAM_ID` | Your Apple Developer Team ID (Membership page on developer.apple.com) |
+
+These four Apple ones are what let macOS open the app with **no Gatekeeper warning**
+— without them the build still works, but each recipient has to right-click → Open
+once past an "unidentified developer" prompt.
+
+Windows signing is optional — add `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` (a code
+signing cert) the same way if you have one. Without it, the installer is unsigned and
+Windows SmartScreen shows a one-time "unknown publisher" warning (recipients click
+"More info" → "Run anyway").
+
+### Cutting a release
+
+```bash
+npm version minor   # or patch/major — bumps package.json and creates a git tag
+git push && git push --tags
+```
+
+Pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which builds on both
+macOS and Windows runners and publishes the installers straight to a GitHub Release
+for that tag (`npm run release` under the hood — same as `dist` but with
+`--publish always`).
+
+### What recipients do
+
+Send them the Releases page (`github.com/baris5d/PixCom/releases/latest`):
+
+- **macOS**: download `PixCom-<version>-arm64.dmg`, open it, drag PixCom into
+  Applications.
+- **Windows**: download `PixCom-<version>-x64.exe` and run it.
+
+No terminal, no Node, no git required.
+
+### Optional: Homebrew Cask
+
+For teams that already use `brew`, a Cask gives them `brew install --cask pixcom` and
+`brew upgrade --cask pixcom` instead of manually checking the Releases page. It's not
+a replacement for the `.dmg` above — Homebrew itself isn't something non-technical
+users typically have installed — just a nicer path for people who do.
+
+A ready-to-copy Cask template lives at `packaging/homebrew/pixcom.rb`. Homebrew taps
+must live in their own repo named `homebrew-<tapname>`, so it can't be installed
+straight from this repo — see the comment at the top of that file for the one-time
+setup, and update its `version`/`sha256` after each release with:
+
+```bash
+shasum -a 256 PixCom-<version>-arm64.dmg
 ```
 
 ## How the match % is computed

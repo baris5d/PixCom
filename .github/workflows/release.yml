@@ -1,0 +1,47 @@
+name: Release
+
+# Builds and publishes installers to a GitHub Release whenever a version
+# tag (v1.2.3) is pushed. macOS build is code-signed and notarized so the
+# app opens without a Gatekeeper warning; Windows build is unsigned unless
+# WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD secrets are also set (see README).
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - name: Build and publish
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS code signing + notarization (required for a clean install
+          # experience on recipients' Macs — see README "Distributing to
+          # non-technical users").
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows code signing (optional — omit these secrets to ship an
+          # unsigned .exe; recipients will see a SmartScreen warning once).
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}

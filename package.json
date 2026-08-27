@@ -11,11 +11,33 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "electron-vite build && electron-builder"
+    "dist": "electron-vite build && electron-builder",
+    "release": "electron-vite build && electron-builder --publish always"
   },
   "build": {
     "appId": "com.pixcom.app",
-    "productName": "PixCom"
+    "productName": "PixCom",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "baris5d",
+      "repo": "PixCom"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
