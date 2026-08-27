@@ -9,6 +9,17 @@ export interface ChangelogEntry {
 // and the About tab read from.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.4.0',
+    date: '2026-08-27',
+    highlights: [
+      'Tabs: run several comparisons at once as workspaces, pin the ones you revisit often',
+      'Every tab is restored automatically when you reopen the app — URLs, device size, zoom, all of it',
+      'Navigation history — a dropdown on each address bar to jump back to any visited URL',
+      'Canvas zoom & pan: Ctrl/Cmd + scroll (or pinch) to zoom into either or both pages, then drag to pan around',
+      'The app UI itself no longer behaves like a selectable webpage'
+    ]
+  },
+  {
     version: '0.3.0',
     date: '2026-08-27',
     highlights: [
