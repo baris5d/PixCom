@@ -72,50 +72,65 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # electron-builder uploads release assets one at a time, and a transient
-  # failure partway through an upload (seen in practice with the large
-  # macOS .dmg) makes it abandon the release object it already created and
-  # start over — creating a second release for the same tag, with whatever
-  # had uploaded before the retry stranded on the first one. Both `release`
-  # matrix jobs already reuse a single release correctly when they succeed
-  # cleanly; this only cleans up the rarer per-job retry-duplicate case,
-  # instead of requiring someone to notice and delete it by hand.
+  # electron-builder's GitHub publish step is supposed to find and reuse an
+  # existing release for the tag, but in practice this repo has seen it
+  # create a *second* release for the same tag instead — sometimes from one
+  # job retrying after a transient upload failure (stranding whatever had
+  # already uploaded on the abandoned release), sometimes from the mac and
+  # Windows jobs each ending up on their own release entirely (each one
+  # complete for its own platform, missing the other's files). Picking
+  # "whichever release has the most assets" and deleting the rest — the
+  # previous version of this job — gets the second case backwards: it can
+  # keep the mac-only release and delete the one holding the Windows exe,
+  # or vice versa. Merge every asset from every duplicate onto one release
+  # instead, so nothing is ever lost regardless of which job created what.
   cleanup-duplicate-releases:
     needs: release
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Keep only the release with the most assets for this tag
+      - name: Merge duplicate releases for this tag into one
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          ids=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate \
+          repo="${GITHUB_REPOSITORY}"
+
+          ids=$(gh api "repos/${repo}/releases" --paginate \
             --jq ".[] | select(.tag_name == \"${tag}\") | .id")
 
           count=$(echo "$ids" | grep -c . || true)
           if [ "$count" -le 1 ]; then
-            echo "Only $count release(s) for $tag — nothing to clean up."
+            echo "Only $count release(s) for $tag — nothing to merge."
             exit 0
           fi
 
-          echo "Found $count releases for $tag — keeping the one with the most assets."
-          best_id=""
-          best_count=-1
+          keeper_id=$(echo "$ids" | head -n1)
+          echo "Found $count releases for $tag — merging all assets onto $keeper_id."
+
+          workdir=$(mktemp -d)
           for id in $ids; do
-            n=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${id}/assets" --jq 'length')
-            echo "  release $id has $n asset(s)"
-            if [ "$n" -gt "$best_count" ]; then
-              best_count="$n"
-              best_id="$id"
-            fi
+            if [ "$id" = "$keeper_id" ]; then continue; fi
+
+            keeper_names=$(gh api "repos/${repo}/releases/${keeper_id}/assets" --jq '.[].name')
+
+            gh api "repos/${repo}/releases/${id}/assets" --jq '.[] | "\(.name)\t\(.browser_download_url)"' \
+              | while IFS=$'\t' read -r asset_name download_url; do
+                  if grep -qxF "$asset_name" <<< "$keeper_names"; then
+                    echo "  skip ${asset_name} (already on ${keeper_id})"
+                    continue
+                  fi
+                  echo "  moving ${asset_name} from ${id} to ${keeper_id}"
+                  curl -sL -o "${workdir}/${asset_name}" "$download_url"
+                  gh release upload "$tag" "${workdir}/${asset_name}" --repo "${repo}" --clobber
+                  rm -f "${workdir}/${asset_name}"
+                done
           done
 
-          echo "Keeping release $best_id ($best_count assets); deleting the rest."
           for id in $ids; do
-            if [ "$id" != "$best_id" ]; then
-              echo "Deleting duplicate release $id"
-              gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}"
+            if [ "$id" != "$keeper_id" ]; then
+              echo "Deleting now-merged release $id"
+              gh api -X DELETE "repos/${repo}/releases/${id}"
             fi
           done
