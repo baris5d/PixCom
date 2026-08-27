@@ -40,6 +40,16 @@ export default function OverlayCompare(): JSX.Element {
   const [syncScroll, setSyncScroll] = useState(true)
   const [scrollSensitivity, setScrollSensitivity] = useState(0.5)
   const [swapped, setSwapped] = useState(false)
+  // Manual "canvas" zoom — a visual scale on top of whatever the stage's
+  // own fit/preset sizing already is, like pinch-zooming a page in a
+  // desktop browser. Independent of `zoom` above, which is the auto-fit
+  // scale for device-size presets.
+  const [zoomSync, setZoomSync] = useState(true)
+  const [canvasZoom, setCanvasZoom] = useState<Record<Side, number>>({ left: 1, right: 1 })
+  const [canvasPan, setCanvasPan] = useState<Record<Side, { x: number; y: number }>>({
+    left: { x: 0, y: 0 },
+    right: { x: 0, y: 0 }
+  })
   const [pageMode, setPageMode] = useState<'compare' | 'interact' | 'inspect'>('compare')
   const [inspected, setInspected] = useState<Record<Side, InspectSelection | null>>({ left: null, right: null })
   const [mode, setMode] = useState<'slider' | 'diff'>('slider')
@@ -56,7 +66,7 @@ export default function OverlayCompare(): JSX.Element {
   const dragMode = useRef<'slider' | 'pan' | null>(null)
   const [activeDrag, setActiveDrag] = useState<'slider' | 'pan' | null>(null)
   const panLast = useRef<{ x: number; y: number } | null>(null)
-  const panTargets = useRef<Array<RefObject<LiveWebviewHandle>>>([])
+  const panSides = useRef<Side[]>([])
 
   const setSide = (side: Side, patch: Partial<SideState>): void => {
     const setter = side === 'left' ? setLeft : setRight
@@ -152,15 +162,79 @@ export default function OverlayCompare(): JSX.Element {
     setPercent(Math.min(100, Math.max(0, raw)))
   }
 
-  // Whichever side(s) should scroll for a pointer event at this x position,
-  // given the current sync-scroll setting. The clipped layer is visible in
-  // [0, percent]% of the stage; the base layer shows through past that.
-  function scrollTargetsAt(clientX: number): Array<RefObject<LiveWebviewHandle>> {
-    if (syncScroll) return [leftRef, rightRef]
+  // Whichever side(s) a pointer event at this x position should act on,
+  // given whether the relevant feature (scroll or zoom) is synced across
+  // both sides. The clipped layer is visible in [0, percent]% of the
+  // stage; the base layer shows through past that.
+  function resolveSides(clientX: number, synced: boolean): Side[] {
+    if (synced) return ['left', 'right']
     const rect = stageRef.current?.getBoundingClientRect()
     const pointerPercent = rect ? ((clientX - rect.left) / rect.width) * 100 : 0
-    return [pointerPercent < percent ? refOf(clippedSide) : refOf(baseSide)]
+    return [pointerPercent < percent ? clippedSide : baseSide]
   }
+
+  function scrollTargetsAt(clientX: number): Array<RefObject<LiveWebviewHandle>> {
+    return resolveSides(clientX, syncScroll).map(refOf)
+  }
+
+  const MIN_CANVAS_ZOOM = 1
+  const MAX_CANVAS_ZOOM = 5
+
+  // Content is scaled around its own center, so the furthest it can pan in
+  // either axis before leaving a gap at the opposite edge is half of
+  // however much bigger than the stage it now is.
+  function clampPan(pan: { x: number; y: number }, z: number, rect: { width: number; height: number }): {
+    x: number
+    y: number
+  } {
+    const maxX = (rect.width * (z - 1)) / 2
+    const maxY = (rect.height * (z - 1)) / 2
+    return { x: Math.min(maxX, Math.max(-maxX, pan.x)), y: Math.min(maxY, Math.max(-maxY, pan.y)) }
+  }
+
+  function applyZoom(factor: number, sides: Side[]): void {
+    const rect = stageRef.current?.getBoundingClientRect()
+    setCanvasZoom((prev) => {
+      const next = { ...prev }
+      for (const side of sides) {
+        next[side] = Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, prev[side] * factor))
+      }
+      return next
+    })
+    setCanvasPan((prev) => {
+      const next = { ...prev }
+      for (const side of sides) {
+        const z = Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, canvasZoom[side] * factor))
+        next[side] = z <= MIN_CANVAS_ZOOM || !rect ? { x: 0, y: 0 } : clampPan(prev[side], z, rect)
+      }
+      return next
+    })
+  }
+
+  function resetZoom(): void {
+    setCanvasZoom({ left: 1, right: 1 })
+    setCanvasPan({ left: { x: 0, y: 0 }, right: { x: 0, y: 0 } })
+  }
+
+  // The slider sets an absolute level (unlike the multiplicative +/-
+  // buttons and ctrl+scroll/pinch), so it needs its own setter rather than
+  // reusing applyZoom's `factor` shape.
+  function setZoomAbsolute(value: number, sides: Side[]): void {
+    const rect = stageRef.current?.getBoundingClientRect()
+    const z = Math.min(MAX_CANVAS_ZOOM, Math.max(MIN_CANVAS_ZOOM, value))
+    setCanvasZoom((prev) => {
+      const next = { ...prev }
+      for (const side of sides) next[side] = z
+      return next
+    })
+    setCanvasPan((prev) => {
+      const next = { ...prev }
+      for (const side of sides) next[side] = z <= MIN_CANVAS_ZOOM || !rect ? { x: 0, y: 0 } : clampPan(prev[side], z, rect)
+      return next
+    })
+  }
+
+  const zoomIsDefault = canvasZoom.left === 1 && canvasZoom.right === 1
 
   function handlePointerDown(e: React.PointerEvent): void {
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -176,7 +250,7 @@ export default function OverlayCompare(): JSX.Element {
       dragMode.current = 'pan'
       setActiveDrag('pan')
       panLast.current = { x: e.clientX, y: e.clientY }
-      panTargets.current = scrollTargetsAt(e.clientX)
+      panSides.current = resolveSides(e.clientX, syncScroll)
     }
   }
   function handlePointerMove(e: React.PointerEvent): void {
@@ -186,23 +260,55 @@ export default function OverlayCompare(): JSX.Element {
       const dx = e.clientX - panLast.current.x
       const dy = e.clientY - panLast.current.y
       panLast.current = { x: e.clientX, y: e.clientY }
-      // Grab-to-pan: content follows the pointer, so it scrolls opposite
-      // the pointer's movement.
-      for (const target of panTargets.current) target.current?.scrollBy(-dx, -dy)
+      const rect = stageRef.current?.getBoundingClientRect()
+      for (const side of panSides.current) {
+        if (canvasZoom[side] > 1) {
+          // Zoomed in: this is a grab-to-pan of the zoomed canvas itself —
+          // content follows the pointer directly.
+          setCanvasPan((prev) => {
+            const raw = { x: prev[side].x + dx, y: prev[side].y + dy }
+            return { ...prev, [side]: rect ? clampPan(raw, canvasZoom[side], rect) : raw }
+          })
+        } else {
+          // Not zoomed: existing behavior — scroll the loaded page itself.
+          // scrollBy's semantics are the opposite of a transform-based pan,
+          // so the sign flips here (content still follows the pointer).
+          refOf(side).current?.scrollBy(-dx, -dy)
+        }
+      }
     }
   }
   function handlePointerUp(): void {
     dragMode.current = null
     setActiveDrag(null)
     panLast.current = null
-    panTargets.current = []
+    panSides.current = []
   }
 
   function handleWheel(e: React.WheelEvent): void {
     e.preventDefault()
-    const targets = scrollTargetsAt(e.clientX)
-    for (const target of targets) {
-      target.current?.scrollBy(e.deltaX * scrollSensitivity, e.deltaY * scrollSensitivity)
+    // A trackpad pinch reaches the page as a ctrl+wheel event in Chromium
+    // (same as a real Ctrl+scroll) — treat either that or Cmd/Ctrl+scroll
+    // as "canvas" zoom, like zooming a page in a desktop browser.
+    if (e.ctrlKey || e.metaKey) {
+      const factor = Math.exp(-e.deltaY * 0.01)
+      applyZoom(factor, resolveSides(e.clientX, zoomSync))
+      return
+    }
+    const targets = resolveSides(e.clientX, syncScroll)
+    const rect = stageRef.current?.getBoundingClientRect()
+    for (const side of targets) {
+      if (canvasZoom[side] > 1) {
+        setCanvasPan((prev) => {
+          const raw = {
+            x: prev[side].x - e.deltaX * scrollSensitivity,
+            y: prev[side].y - e.deltaY * scrollSensitivity
+          }
+          return { ...prev, [side]: rect ? clampPan(raw, canvasZoom[side], rect) : raw }
+        })
+      } else {
+        refOf(side).current?.scrollBy(e.deltaX * scrollSensitivity, e.deltaY * scrollSensitivity)
+      }
     }
   }
 
@@ -380,26 +486,44 @@ export default function OverlayCompare(): JSX.Element {
   // Each side is always rendered in the same stable slot (same component
   // identity/key), so a page's navigation session survives a swap. Only the
   // clip-path/z-index — which visual role it plays — changes with `swapped`.
+  //
+  // The slider's clip-path and the manual canvas zoom/pan live on two
+  // separate nested elements on purpose: clip-path is computed in the
+  // element's own untransformed box, so if it sat on the *same* element as
+  // the zoom transform, zooming one side would drag the slider's reveal
+  // boundary along with it instead of leaving it fixed at `percent`% of
+  // the stage.
   function renderLayer(side: Side): JSX.Element {
     const state = stateOf(side)
     const isClippedRole = side === clippedSide
-    const style: CSSProperties = {
+    const outerStyle: CSSProperties = {
       zIndex: isClippedRole ? 2 : 1,
       clipPath: mode === 'slider' && isClippedRole ? `inset(0 ${100 - percent}% 0 0)` : undefined
     }
-    if (state.kind === 'image' && state.image) {
-      return <img key={side} src={state.image.dataUrl} alt={side} className="webview-layer" style={style} draggable={false} />
+    const z = canvasZoom[side]
+    const pan = canvasPan[side]
+    const innerStyle: CSSProperties = {
+      transform: z !== 1 || pan.x !== 0 || pan.y !== 0 ? `translate(${pan.x}px, ${pan.y}px) scale(${z})` : undefined,
+      transformOrigin: 'center'
     }
+    const content =
+      state.kind === 'image' && state.image ? (
+        <img key={side} src={state.image.dataUrl} alt={side} className="webview-layer" style={innerStyle} draggable={false} />
+      ) : (
+        <LiveWebviewLayer
+          key={side}
+          ref={refOf(side)}
+          style={innerStyle}
+          onLoadingChange={handleLoadingChange(side)}
+          onNavStateChange={handleNavStateChange(side)}
+          onError={handleError(side)}
+          onInspectSelect={handleInspectSelect(side)}
+        />
+      )
     return (
-      <LiveWebviewLayer
-        key={side}
-        ref={refOf(side)}
-        style={style}
-        onLoadingChange={handleLoadingChange(side)}
-        onNavStateChange={handleNavStateChange(side)}
-        onError={handleError(side)}
-        onInspectSelect={handleInspectSelect(side)}
-      />
+      <div className="layer-clip-wrapper" style={outerStyle}>
+        {content}
+      </div>
     )
   }
 
@@ -466,6 +590,92 @@ export default function OverlayCompare(): JSX.Element {
               title="Scroll sensitivity"
             />
             <span className="size-readout">{scrollSensitivity.toFixed(1)}x</span>
+          </div>
+
+          <span className="toolbar-divider" />
+
+          <div className="toolbar-group">
+            <span className="toolbar-label">Zoom</span>
+            <div className="mode-toggle">
+              <button className={zoomSync ? 'active' : ''} onClick={() => setZoomSync(true)}>
+                Together
+              </button>
+              <button className={!zoomSync ? 'active' : ''} onClick={() => setZoomSync(false)}>
+                Independently
+              </button>
+            </div>
+            {zoomSync ? (
+              <>
+                <button
+                  className="nav-btn"
+                  onClick={() => applyZoom(1 / 1.25, ['left', 'right'])}
+                  disabled={zoomIsDefault}
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <input
+                  type="range"
+                  className="sensitivity-slider"
+                  min={MIN_CANVAS_ZOOM * 100}
+                  max={MAX_CANVAS_ZOOM * 100}
+                  step={5}
+                  value={canvasZoom.left * 100}
+                  onChange={(e) => setZoomAbsolute(Number(e.target.value) / 100, ['left', 'right'])}
+                  title="Zoom level"
+                />
+                <span className="size-readout">{Math.round(canvasZoom.left * 100)}%</span>
+                <button
+                  className="nav-btn"
+                  onClick={() => applyZoom(1.25, ['left', 'right'])}
+                  disabled={canvasZoom.left >= MAX_CANVAS_ZOOM}
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="size-readout">A</span>
+                <input
+                  type="range"
+                  className="sensitivity-slider"
+                  min={MIN_CANVAS_ZOOM * 100}
+                  max={MAX_CANVAS_ZOOM * 100}
+                  step={5}
+                  value={canvasZoom.left * 100}
+                  onChange={(e) => setZoomAbsolute(Number(e.target.value) / 100, ['left'])}
+                  title="Zoom level — Source A"
+                />
+                <span className="size-readout">{Math.round(canvasZoom.left * 100)}%</span>
+                <span className="size-readout">B</span>
+                <input
+                  type="range"
+                  className="sensitivity-slider"
+                  min={MIN_CANVAS_ZOOM * 100}
+                  max={MAX_CANVAS_ZOOM * 100}
+                  step={5}
+                  value={canvasZoom.right * 100}
+                  onChange={(e) => setZoomAbsolute(Number(e.target.value) / 100, ['right'])}
+                  title="Zoom level — Source B"
+                />
+                <span className="size-readout">{Math.round(canvasZoom.right * 100)}%</span>
+              </>
+            )}
+            <button
+              className="nav-btn"
+              onClick={resetZoom}
+              disabled={zoomIsDefault}
+              title="Reset zoom"
+              aria-label="Reset zoom"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M13 8a5 5 0 1 1-1.6-3.68" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M13 2.8 V5.5 H10.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
 
           <span className="toolbar-divider" />

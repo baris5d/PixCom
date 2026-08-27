@@ -917,6 +917,12 @@ button.active {
   resize: none;
 }
 
+.layer-clip-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
 .webview-layer {
   position: absolute;
   inset: 0;
