@@ -1,12 +1,10 @@
 name: Release
 
 # Builds and publishes installers to a GitHub Release whenever a version
-# tag (v1.2.3) is pushed.
-#
-# Windows-only for now. To bring macOS back in once the Apple signing
-# secrets (see README "Distributing to non-technical users") are set up,
-# change the matrix below to:
-#   os: [macos-latest, windows-latest]
+# tag (v1.2.3) is pushed. macOS build is code-signed and notarized (Apple
+# secrets below); Windows build is unsigned unless WIN_CSC_LINK/
+# WIN_CSC_KEY_PASSWORD secrets are also added (see README "Distributing to
+# non-technical users").
 on:
   push:
     tags:
@@ -19,7 +17,7 @@ jobs:
   release:
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,15 +30,31 @@ jobs:
 
       - run: npm run typecheck
 
-      # No WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD env vars here on purpose: an
-      # unset GitHub secret resolves to an empty string rather than being
+      # Split by OS (rather than one step with every env var) so the mac
+      # signing vars are never even present in the Windows job's
+      # environment — electron-builder can fall back to a shared CSC_LINK
+      # across platforms if a platform-specific one is absent, and mixing
+      # them up would mean signing the Windows exe with a macOS cert.
+      - name: Build and publish (macOS)
+        if: runner.os == 'macOS'
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # No WIN_CSC_LINK/WIN_CSC_KEY_PASSWORD here on purpose: an unset
+      # GitHub secret resolves to an empty string rather than being
       # absent, and electron-builder treats a *present but empty*
       # WIN_CSC_LINK as "resolve this empty string as a certificate file
       # path" rather than "no signing" — which fails the build outright.
-      # Once you have a Windows code signing cert, add both lines back
-      # under `env:` below (see README "Distributing to non-technical
-      # users" for what they should be).
-      - name: Build and publish
+      # Once you have a Windows code signing cert, add both under `env:`
+      # below (see README for what they should be).
+      - name: Build and publish (Windows)
+        if: runner.os == 'Windows'
         run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -97,40 +97,37 @@ cloning the repo or installing Node. Two pieces make that work — a CI pipeline
 builds signed installers and publishes them to GitHub Releases, and (optionally) a
 Homebrew Cask on top of that for people who already use `brew`.
 
-**Windows is set up first** — the release workflow currently only builds/publishes
-for Windows (`.github/workflows/release.yml`'s matrix is `[windows-latest]`). macOS
-comes back once the Apple signing secrets below are ready; until then, switch the
-matrix to `[macos-latest, windows-latest]` to include it (it'll just build unsigned
-if the Apple secrets aren't set yet — see the note below).
+The release workflow (`.github/workflows/release.yml`) builds both **macOS** and
+**Windows** installers in parallel and publishes them to the same GitHub Release.
 
-### One-time setup (Windows)
+### One-time setup (macOS) — done
 
-Nothing is required to get an installer out — without any secrets, `electron-builder`
-ships an **unsigned** `.exe`, and Windows SmartScreen shows a one-time "unknown
-publisher" warning (recipients click "More info" → "Run anyway"). That's fine for an
-internal tool; for a fully clean install, get a code signing certificate (an OV/EV
-cert from a CA like DigiCert, Sectigo, SSL.com, or your org's existing one) and add
-it as GitHub secrets:
+The Apple secrets below are already configured on this repo, so macOS builds are
+code-signed and notarized — recipients get **no Gatekeeper warning** at all. For
+reference, what's set:
+
+| Secret | What it's for |
+| --- | --- |
+| `CSC_LINK` | Base64 of the Apple **Developer ID Application** certificate (`.p12`) |
+| `CSC_KEY_PASSWORD` | The `.p12`'s export password |
+| `APPLE_ID` | The Apple ID (email) tied to that certificate |
+| `APPLE_APP_SPECIFIC_PASSWORD` | An [app-specific password](https://support.apple.com/en-us/102654) for that Apple ID |
+| `APPLE_TEAM_ID` | The Apple Developer Team ID |
+
+### One-time setup (Windows) — optional, not done yet
+
+Windows ships **unsigned** right now, so recipients see a one-time SmartScreen
+"unknown publisher" warning (click "More info" → "Run anyway"). Fine for an internal
+tool; for a fully clean install, get a code signing certificate (an OV/EV cert from a
+CA like DigiCert, Sectigo, SSL.com, or your org's existing one) and add:
 
 | Secret | What it's for |
 | --- | --- |
 | `WIN_CSC_LINK` | Base64 of the certificate (`.p12`/`.pfx`): `base64 -i cert.pfx \| pbcopy` (or `certutil -encode` on Windows) |
 | `WIN_CSC_KEY_PASSWORD` | The certificate's export password |
 
-### One-time setup (macOS, later)
-
-In this repo's GitHub settings → Secrets and variables → Actions, add:
-
-| Secret | What it's for |
-| --- | --- |
-| `CSC_LINK` | Base64 of your Apple **Developer ID Application** certificate (`.p12`): `base64 -i cert.p12 \| pbcopy` |
-| `CSC_KEY_PASSWORD` | The `.p12`'s export password |
-| `APPLE_ID` | The Apple ID (email) tied to that certificate |
-| `APPLE_APP_SPECIFIC_PASSWORD` | An [app-specific password](https://support.apple.com/en-us/102654) for that Apple ID (not your normal login password) |
-| `APPLE_TEAM_ID` | Your Apple Developer Team ID (Membership page on developer.apple.com) |
-
-These are what let macOS open the app with **no Gatekeeper warning**. Once they're
-set, add `macos-latest` back to the workflow's matrix.
+Then add both under the Windows step's `env:` in `.github/workflows/release.yml`
+(left out on purpose until they exist — see the comment there for why).
 
 ### Cutting a release
 
@@ -147,9 +144,9 @@ release` under the hood — same as `dist` but with `--publish always`).
 
 Send them the Releases page (`github.com/baris5d/PixCom/releases/latest`):
 
+- **macOS**: download `PixCom-<version>-arm64.dmg`, open it, drag PixCom into
+  Applications.
 - **Windows**: download `PixCom-<version>-x64.exe` and run it.
-- **macOS** (once re-enabled above): download `PixCom-<version>-arm64.dmg`, open it,
-  drag PixCom into Applications.
 
 No terminal, no Node, no git required.
 
