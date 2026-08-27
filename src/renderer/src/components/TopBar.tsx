@@ -160,10 +160,16 @@ export default function TopBar(): JSX.Element {
         title="Settings"
         aria-label="Settings"
       >
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor">
-          {/* Dashed ring reads as gear teeth around a center hole. */}
-          <circle cx="8" cy="8" r="6" strokeWidth="2.6" strokeDasharray="2.3 2.3" />
-          <circle cx="8" cy="8" r="2.1" strokeWidth="1.4" />
+        <svg viewBox="0 0 16 16" width="16" height="16">
+          {/* Filled 8-tooth gear silhouette with a punched-out center hole
+              (evenodd fill rule) — verified legible even at 16px, unlike
+              the earlier dashed-ring attempt which read as a sun/aperture
+              icon. */}
+          <path
+            fill="currentColor"
+            fillRule="evenodd"
+            d="M8.00,3.00 L8.86,3.07 L9.24,0.91 L11.37,1.64 L10.34,3.58 L11.54,4.46 L12.09,5.12 L13.89,3.86 L14.88,5.88 L12.78,6.53 L13.00,8.00 L12.93,8.86 L15.09,9.24 L14.36,11.37 L12.42,10.34 L11.54,11.54 L10.88,12.09 L12.14,13.89 L10.12,14.88 L9.47,12.78 L8.00,13.00 L7.14,12.93 L6.76,15.09 L4.63,14.36 L5.66,12.42 L4.46,11.54 L3.91,10.88 L2.11,12.14 L1.12,10.12 L3.22,9.47 L3.00,8.00 L3.07,7.14 L0.91,6.76 L1.64,4.63 L3.58,5.66 L4.46,4.46 L5.12,3.91 L3.86,2.11 L5.88,1.12 L6.53,3.22 L8.00,3.00 Z M8,6.2 a1.8,1.8 0 1,0 0,3.6 a1.8,1.8 0 1,0 0,-3.6 Z"
+          />
         </svg>
       </button>
     </div>
