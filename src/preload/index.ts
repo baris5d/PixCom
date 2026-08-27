@@ -18,6 +18,13 @@ export interface DiffResult {
 
 export interface AppSettings {
   autoUpdateCheck: boolean
+  themeId: string
+}
+
+export interface CustomThemeFile {
+  id: string
+  name: string
+  colors: Record<string, string>
 }
 
 const api = {
@@ -66,6 +73,14 @@ const api = {
   settings: {
     get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
     set: (settings: AppSettings): void => ipcRenderer.send('settings:set', settings)
+  },
+
+  themes: {
+    listCustom: (): Promise<CustomThemeFile[]> => ipcRenderer.invoke('themes:list-custom'),
+    saveCustom: (name: string, colors: Record<string, string>): Promise<string> =>
+      ipcRenderer.invoke('themes:save-custom', name, colors),
+    deleteCustom: (id: string): void => ipcRenderer.send('themes:delete-custom', id),
+    openFolder: (): void => ipcRenderer.send('themes:open-folder')
   }
 }
 

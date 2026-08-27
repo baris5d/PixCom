@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
 import { registerUpdater, setUpdaterWindow, checkForUpdatesNow } from './updater'
 import { loadSettings, saveSettings, type AppSettings } from './settings'
+import { deleteCustomTheme, listCustomThemes, openThemesFolder, saveCustomTheme } from './themes'
 
 // Electron's default UA includes an "Electron/x.y.z" token that some
 // bot-protection services (Akamai, Cloudflare, etc.) block outright.
@@ -101,6 +102,15 @@ function registerSettingsHandlers(): void {
   })
 }
 
+function registerThemeHandlers(): void {
+  ipcMain.handle('themes:list-custom', () => listCustomThemes())
+  ipcMain.handle('themes:save-custom', (_event, name: string, colors: Record<string, string>) =>
+    saveCustomTheme(name, colors)
+  )
+  ipcMain.on('themes:delete-custom', (_event, id: string) => deleteCustomTheme(id))
+  ipcMain.on('themes:open-folder', () => openThemesFolder())
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.pixcom.app')
 
@@ -111,6 +121,7 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   registerWindowControlHandlers()
   registerSettingsHandlers()
+  registerThemeHandlers()
   registerUpdater()
   createWindow()
 

@@ -86,6 +86,13 @@ clicking it downloads the update and relaunches the app on the new version, no
 further steps needed. (Only applies to installed builds; `npm run dev` never
 checks.)
 
+**Theming.** Settings (gear icon) → Theme. Ships with Dark, Light, Night Owl, and
+Dracula. Every color (and the background gradient) is a plain CSS value in a JSON
+file — edit any of them in the built-in editor and "Save as new theme…", or drop
+your own `.json` file (same `{ "name": ..., "colors": { ... } }` shape as
+`src/renderer/src/themes/*.json`) straight into the themes folder ("Open themes
+folder" button) — no rebuild needed, it's picked up next time the list loads.
+
 ## Build
 
 ```bash

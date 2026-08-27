@@ -1,0 +1,32 @@
+{
+  "name": "Light",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(120, 140, 200, 0.10), transparent 55%), radial-gradient(circle at 85% 15%, rgba(90, 160, 170, 0.08), transparent 55%), linear-gradient(165deg, #f5f6f9 0%, #eceef2 45%, #f0f1f4 100%)",
+    "textPrimary": "#2a2d3a",
+    "textSecondary": "#6b7080",
+    "textMuted": "#9296a3",
+    "textBright": "#14151b",
+    "surfaceBg": "rgba(20, 22, 35, 0.035)",
+    "surfaceBorder": "rgba(20, 22, 35, 0.10)",
+    "surfaceStrongBg": "rgba(255, 255, 255, 0.94)",
+    "inputBg": "rgba(20, 22, 35, 0.05)",
+    "inputBorder": "rgba(20, 22, 35, 0.12)",
+    "overlayScrim": "rgba(30, 32, 40, 0.35)",
+    "hoverBg": "rgba(20, 22, 35, 0.06)",
+    "divider": "rgba(20, 22, 35, 0.10)",
+    "accentBg": "rgba(90, 105, 190, 0.16)",
+    "accentBorder": "rgba(90, 105, 190, 0.35)",
+    "accentText": "#4a56b8",
+    "accentSolid": "#5a69be",
+    "successBg": "rgba(50, 140, 95, 0.14)",
+    "successBorder": "rgba(50, 140, 95, 0.35)",
+    "successText": "#2f8d5f",
+    "dangerBg": "rgba(210, 70, 70, 0.85)",
+    "dangerText": "#c94f4f",
+    "buttonBg": "rgba(20, 22, 35, 0.04)",
+    "buttonBorder": "rgba(20, 22, 35, 0.09)",
+    "buttonHoverBg": "rgba(20, 22, 35, 0.07)",
+    "sliderColor": "rgba(60, 64, 80, 0.55)",
+    "sliderHandle": "#6b7080"
+  }
+}

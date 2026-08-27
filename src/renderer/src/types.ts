@@ -1,5 +1,44 @@
 export type SourceKind = 'url' | 'image'
 
+export interface ThemeColors {
+  bgGradient: string
+  textPrimary: string
+  textSecondary: string
+  textMuted: string
+  textBright: string
+  surfaceBg: string
+  surfaceBorder: string
+  surfaceStrongBg: string
+  inputBg: string
+  inputBorder: string
+  overlayScrim: string
+  hoverBg: string
+  divider: string
+  accentBg: string
+  accentBorder: string
+  accentText: string
+  accentSolid: string
+  successBg: string
+  successBorder: string
+  successText: string
+  dangerBg: string
+  dangerText: string
+  buttonBg: string
+  buttonBorder: string
+  buttonHoverBg: string
+  sliderColor: string
+  sliderHandle: string
+}
+
+export interface Theme {
+  id: string
+  name: string
+  colors: ThemeColors
+  /** Present for user-created themes loaded from userData/themes — lets the
+   *  UI offer "delete" only for those, never for built-ins. */
+  custom?: boolean
+}
+
 export interface InspectTreeNode {
   tag: string
   id: string | null

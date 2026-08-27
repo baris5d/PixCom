@@ -1,0 +1,32 @@
+{
+  "name": "Night Owl",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(130, 170, 255, 0.10), transparent 55%), radial-gradient(circle at 85% 15%, rgba(127, 219, 202, 0.08), transparent 55%), linear-gradient(165deg, #011627 0%, #0b2942 45%, #01111d 100%)",
+    "textPrimary": "#d6deeb",
+    "textSecondary": "#7fa8c9",
+    "textMuted": "#5f7e97",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(130, 170, 255, 0.05)",
+    "surfaceBorder": "rgba(130, 170, 255, 0.10)",
+    "surfaceStrongBg": "rgba(1, 22, 39, 0.95)",
+    "inputBg": "rgba(0, 0, 0, 0.25)",
+    "inputBorder": "rgba(130, 170, 255, 0.12)",
+    "overlayScrim": "rgba(1, 10, 18, 0.6)",
+    "hoverBg": "rgba(130, 170, 255, 0.10)",
+    "divider": "rgba(130, 170, 255, 0.14)",
+    "accentBg": "rgba(130, 170, 255, 0.30)",
+    "accentBorder": "rgba(130, 170, 255, 0.40)",
+    "accentText": "#82aaff",
+    "accentSolid": "#82aaff",
+    "successBg": "rgba(173, 219, 103, 0.20)",
+    "successBorder": "rgba(173, 219, 103, 0.40)",
+    "successText": "#addb67",
+    "dangerBg": "rgba(239, 83, 80, 0.85)",
+    "dangerText": "#ef5350",
+    "buttonBg": "rgba(130, 170, 255, 0.05)",
+    "buttonBorder": "rgba(130, 170, 255, 0.08)",
+    "buttonHoverBg": "rgba(130, 170, 255, 0.10)",
+    "sliderColor": "rgba(214, 222, 235, 0.7)",
+    "sliderHandle": "#7fa8c9"
+  }
+}

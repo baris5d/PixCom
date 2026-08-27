@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import SettingsScreen from './SettingsScreen'
+import { applyTheme, BUILTIN_THEMES, DEFAULT_THEME_ID, findTheme } from '../theme'
+import type { Theme, ThemeColors } from '../types'
 
 // The window is frameless (see main/index.ts) so this bar is the *only*
 // title bar there is — it owns the drag region and the window controls,
@@ -15,6 +17,8 @@ export default function TopBar(): JSX.Element {
   const [modalDismissed, setModalDismissed] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [autoUpdateCheck, setAutoUpdateCheck] = useState(true)
+  const [themes, setThemes] = useState<Theme[]>(BUILTIN_THEMES)
+  const [themeId, setThemeId] = useState(DEFAULT_THEME_ID)
 
   useEffect(() => {
     window.api.window.isMaximized().then(setMaximized)
@@ -26,7 +30,20 @@ export default function TopBar(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    window.api.settings.get().then((s) => setAutoUpdateCheck(s.autoUpdateCheck))
+    Promise.all([window.api.settings.get(), window.api.themes.listCustom()]).then(([settings, custom]) => {
+      setAutoUpdateCheck(settings.autoUpdateCheck)
+      const customThemes: Theme[] = custom.map((c) => ({
+        id: c.id,
+        name: c.name,
+        colors: c.colors as unknown as ThemeColors,
+        custom: true
+      }))
+      const combined = [...BUILTIN_THEMES, ...customThemes]
+      setThemes(combined)
+      const id = settings.themeId || DEFAULT_THEME_ID
+      setThemeId(id)
+      applyTheme((findTheme(combined, id) ?? BUILTIN_THEMES[0]).colors)
+    })
   }, [])
 
   useEffect(() => {
@@ -55,7 +72,30 @@ export default function TopBar(): JSX.Element {
   function toggleAutoUpdateCheck(): void {
     const next = !autoUpdateCheck
     setAutoUpdateCheck(next)
-    window.api.settings.set({ autoUpdateCheck: next })
+    window.api.settings.set({ autoUpdateCheck: next, themeId })
+  }
+
+  function handleSelectTheme(id: string, themeList: Theme[] = themes): void {
+    const theme = findTheme(themeList, id)
+    if (!theme) return
+    setThemeId(id)
+    applyTheme(theme.colors)
+    window.api.settings.set({ autoUpdateCheck, themeId: id })
+  }
+
+  async function handleSaveCustomTheme(name: string, colors: ThemeColors): Promise<void> {
+    const id = await window.api.themes.saveCustom(name, colors as unknown as Record<string, string>)
+    const newTheme: Theme = { id, name, colors, custom: true }
+    const nextThemes = [...themes, newTheme]
+    setThemes(nextThemes)
+    handleSelectTheme(id, nextThemes)
+  }
+
+  function handleDeleteCustomTheme(id: string): void {
+    window.api.themes.deleteCustom(id)
+    const nextThemes = themes.filter((t) => t.id !== id)
+    setThemes(nextThemes)
+    if (themeId === id) handleSelectTheme(DEFAULT_THEME_ID, nextThemes)
   }
 
   // macOS convention: window controls sit at the top-left; everywhere else
@@ -216,6 +256,11 @@ export default function TopBar(): JSX.Element {
           version={version}
           autoUpdateCheck={autoUpdateCheck}
           onToggleAutoUpdateCheck={toggleAutoUpdateCheck}
+          themes={themes}
+          themeId={themeId}
+          onSelectTheme={handleSelectTheme}
+          onSaveCustomTheme={handleSaveCustomTheme}
+          onDeleteCustomTheme={handleDeleteCustomTheme}
           onClose={() => setSettingsOpen(false)}
         />
       )}
