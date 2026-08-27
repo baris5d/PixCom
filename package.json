@@ -21,7 +21,8 @@
     "publish": {
       "provider": "github",
       "owner": "baris5d",
-      "repo": "PixCom"
+      "repo": "PixCom",
+      "draft": false
     },
     "mac": {
       "target": [
