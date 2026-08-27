@@ -1,4 +1,4 @@
-# Pixel Compare
+# PixCom
 
 Electron desktop app for comparing a website, image, or (later) Figma frame against
 another source, with a draggable before/after slider and a pixel match percentage.

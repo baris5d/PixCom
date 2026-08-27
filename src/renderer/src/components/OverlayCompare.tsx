@@ -1,7 +1,8 @@
-import { useCallback, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import LiveWebviewLayer, { type LiveWebviewHandle, type NavState } from './LiveWebviewLayer'
+import InspectPanel from './InspectPanel'
 import { SIZE_PRESETS, normalizeUrl } from '../presets'
-import type { LoadedSource, SourceKind } from '../types'
+import type { InspectSelection, LoadedSource, SourceKind } from '../types'
 
 interface SideState {
   kind: SourceKind
@@ -31,18 +32,24 @@ export default function OverlayCompare(): JSX.Element {
   const leftRef = useRef<LiveWebviewHandle>(null)
   const rightRef = useRef<LiveWebviewHandle>(null)
 
-  const [activePreset, setActivePreset] = useState<string>(SIZE_PRESETS[4].label)
+  const [activePreset, setActivePreset] = useState<string | null>(null)
   const [size, setSize] = useState({ width: SIZE_PRESETS[4].width, height: SIZE_PRESETS[4].height })
+  const [fitToWindow, setFitToWindow] = useState(true)
+  const [zoom, setZoom] = useState(1)
   const [percent, setPercent] = useState(50)
   const [syncScroll, setSyncScroll] = useState(true)
   const [scrollSensitivity, setScrollSensitivity] = useState(0.5)
   const [swapped, setSwapped] = useState(false)
-  const [interactMode, setInteractMode] = useState(false)
+  const [pageMode, setPageMode] = useState<'compare' | 'interact' | 'inspect'>('compare')
+  const [inspected, setInspected] = useState<Record<Side, InspectSelection | null>>({ left: null, right: null })
   const [mode, setMode] = useState<'slider' | 'diff'>('slider')
   const [diffing, setDiffing] = useState(false)
   const [matchPercent, setMatchPercent] = useState<number | null>(null)
   const [diffDataUrl, setDiffDataUrl] = useState<string | null>(null)
   const [diffError, setDiffError] = useState<string | null>(null)
+  const [elementDiffing, setElementDiffing] = useState(false)
+  const [elementDiff, setElementDiff] = useState<{ matchPercent: number; diffDataUrl: string } | null>(null)
+  const [elementDiffError, setElementDiffError] = useState<string | null>(null)
 
   const stageRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -60,10 +67,12 @@ export default function OverlayCompare(): JSX.Element {
 
   // The stage always renders a "base" layer (fully visible, shows through
   // past the slider) and a "clipped" layer (revealed from the left edge up
-  // to the slider position). Swapping flips which loaded side plays which
-  // role, without touching the address bars or re-navigating anything.
-  const baseSide: Side = swapped ? 'right' : 'left'
-  const clippedSide: Side = swapped ? 'left' : 'right'
+  // to the slider position — i.e. the visually-left portion of the stage).
+  // So the left data-side plays the clipped role and the right data-side
+  // plays the base role by default; swapping flips which loaded side plays
+  // which role, without touching the address bars or re-navigating anything.
+  const baseSide: Side = swapped ? 'left' : 'right'
+  const clippedSide: Side = swapped ? 'right' : 'left'
 
   const handleLoadingChange = useCallback(
     (side: Side) => (loading: boolean) => setSide(side, { loading }),
@@ -75,6 +84,10 @@ export default function OverlayCompare(): JSX.Element {
   )
   const handleError = useCallback(
     (side: Side) => (loadError: string | null) => setSide(side, { loadError }),
+    []
+  )
+  const handleInspectSelect = useCallback(
+    (side: Side) => (data: InspectSelection) => setInspected((prev) => ({ ...prev, [side]: data })),
     []
   )
 
@@ -91,7 +104,52 @@ export default function OverlayCompare(): JSX.Element {
 
   function applyPreset(preset: (typeof SIZE_PRESETS)[number]): void {
     setActivePreset(preset.label)
+    setFitToWindow(false)
     setSize({ width: preset.width, height: preset.height })
+  }
+
+  // Fixed device sizes are pinned to real pixel dimensions, so a preset
+  // larger than the current window would otherwise get clipped. Scale the
+  // whole stage down to fit whenever the window (or the chosen preset) is
+  // bigger than the available space, and keep it in sync as either changes.
+  useEffect(() => {
+    if (fitToWindow) {
+      setZoom(1)
+      return
+    }
+    const container = containerRef.current
+    if (!container) return
+    const recompute = (): void => {
+      const rect = container.getBoundingClientRect()
+      const fit = Math.min(1, (rect.width - 8) / size.width, (rect.height - 8) / size.height)
+      setZoom(Number.isFinite(fit) && fit > 0 ? fit : 1)
+    }
+    recompute()
+    const observer = new ResizeObserver(recompute)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [fitToWindow, size.width, size.height])
+
+  // Re-applied whenever a side (re)navigates too, since a fresh page load
+  // wipes whatever the previously-injected inspector script had set up.
+  useEffect(() => {
+    const on = pageMode === 'inspect'
+    leftRef.current?.setInspectMode(on)
+    rightRef.current?.setInspectMode(on)
+    if (!on) {
+      setInspected({ left: null, right: null })
+      setElementDiff(null)
+      setElementDiffError(null)
+    }
+  }, [pageMode, left.navigatedUrl, right.navigatedUrl])
+
+  function copyUrlToOtherSide(side: Side): void {
+    const source = stateOf(side)
+    const target: Side = side === 'left' ? 'right' : 'left'
+    const url = (source.navigatedUrl ?? source.addressInput).trim()
+    if (!url) return
+    setSide(target, { kind: 'url' })
+    navigate(target, url)
   }
 
   const SLIDER_GRAB_PERCENT = 4 // how close to the line counts as "grabbing" it
@@ -187,6 +245,41 @@ export default function OverlayCompare(): JSX.Element {
     }
   }
 
+  // Same pixel diff as the full-page one, but cropped to just the two
+  // elements picked in Inspect mode — useful when only one component is
+  // being checked instead of the whole page.
+  async function runElementDiff(): Promise<void> {
+    const { left: leftSel, right: rightSel } = inspected
+    if (!leftSel || !rightSel) return
+    setElementDiffing(true)
+    setElementDiffError(null)
+    try {
+      const [leftShot, rightShot] = await Promise.all([
+        leftRef.current!.capturePage({
+          x: leftSel.position.x,
+          y: leftSel.position.y,
+          width: leftSel.size.width,
+          height: leftSel.size.height
+        }),
+        rightRef.current!.capturePage({
+          x: rightSel.position.x,
+          y: rightSel.position.y,
+          width: rightSel.size.width,
+          height: rightSel.size.height
+        })
+      ])
+      const result = await window.api.diffImages({
+        leftDataUrl: leftShot.dataUrl,
+        rightDataUrl: rightShot.dataUrl
+      })
+      setElementDiff({ matchPercent: result.matchPercent, diffDataUrl: result.diffDataUrl })
+    } catch (err) {
+      setElementDiffError(err instanceof Error ? err.message : 'Failed to compare elements')
+    } finally {
+      setElementDiffing(false)
+    }
+  }
+
   function renderSideBar(side: Side, state: SideState): JSX.Element {
     const ref = side === 'left' ? leftRef : rightRef
     return (
@@ -239,6 +332,14 @@ export default function OverlayCompare(): JSX.Element {
             >
               Go
             </button>
+            <button
+              className="nav-btn copy-btn"
+              disabled={!state.addressInput.trim()}
+              title={`Copy this URL to the ${side === 'left' ? 'right' : 'left'} side`}
+              onClick={() => copyUrlToOtherSide(side)}
+            >
+              {side === 'left' ? '⇒' : '⇐'}
+            </button>
           </div>
         ) : (
           <div className="image-form">
@@ -287,6 +388,7 @@ export default function OverlayCompare(): JSX.Element {
         onLoadingChange={handleLoadingChange(side)}
         onNavStateChange={handleNavStateChange(side)}
         onError={handleError(side)}
+        onInspectSelect={handleInspectSelect(side)}
       />
     )
   }
@@ -299,86 +401,122 @@ export default function OverlayCompare(): JSX.Element {
       </div>
 
       <div className="size-toolbar">
+        <button className={fitToWindow ? 'active' : ''} onClick={() => setFitToWindow(true)}>
+          Fit to window
+        </button>
+        <span className="toolbar-divider" />
         {SIZE_PRESETS.map((preset) => (
           <button
             key={preset.label}
-            className={activePreset === preset.label ? 'active' : ''}
+            className={!fitToWindow && activePreset === preset.label ? 'active' : ''}
             onClick={() => applyPreset(preset)}
           >
             {preset.label}
           </button>
         ))}
-        <span className="size-readout">
-          {size.width}×{size.height}
-        </span>
+        {!fitToWindow && (
+          <span className="size-readout">
+            {size.width}×{size.height}
+            {zoom < 0.999 && ` · zoomed to ${Math.round(zoom * 100)}%`}
+          </span>
+        )}
       </div>
 
-      <div className="size-toolbar">
-        <div className="toolbar-group">
-          <span className="toolbar-label">Scroll</span>
-          <div className="mode-toggle">
-            <button className={syncScroll ? 'active' : ''} onClick={() => setSyncScroll(true)}>
-              Together
-            </button>
-            <button className={!syncScroll ? 'active' : ''} onClick={() => setSyncScroll(false)}>
-              Independently
-            </button>
+      <div className="size-toolbar controls-row">
+        <div className="toolbar-start">
+          <div className="toolbar-group">
+            <span className="toolbar-label">Scroll</span>
+            <div className="mode-toggle">
+              <button className={syncScroll ? 'active' : ''} onClick={() => setSyncScroll(true)}>
+                Together
+              </button>
+              <button className={!syncScroll ? 'active' : ''} onClick={() => setSyncScroll(false)}>
+                Independently
+              </button>
+            </div>
+            <input
+              type="range"
+              className="sensitivity-slider"
+              min={0.1}
+              max={2}
+              step={0.1}
+              value={scrollSensitivity}
+              onChange={(e) => setScrollSensitivity(Number(e.target.value))}
+              title="Scroll sensitivity"
+            />
+            <span className="size-readout">{scrollSensitivity.toFixed(1)}x</span>
           </div>
-          <input
-            type="range"
-            className="sensitivity-slider"
-            min={0.1}
-            max={2}
-            step={0.1}
-            value={scrollSensitivity}
-            onChange={(e) => setScrollSensitivity(Number(e.target.value))}
-            title="Scroll sensitivity"
-          />
-          <span className="size-readout">{scrollSensitivity.toFixed(1)}x</span>
-        </div>
 
-        <div className="toolbar-group">
-          <span className="toolbar-label">Pages</span>
-          <div className="mode-toggle">
-            <button className={!interactMode ? 'active' : ''} onClick={() => setInteractMode(false)}>
-              Compare
-            </button>
-            <button className={interactMode ? 'active' : ''} onClick={() => setInteractMode(true)}>
-              Interact (click/hover)
-            </button>
-          </div>
-        </div>
-
-        <div className="toolbar-group">
-          <span className="toolbar-label">View</span>
-          <div className="mode-toggle">
-            <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
-              Slider
-            </button>
+          <div className="toolbar-group">
+            <span className="toolbar-label">Pages</span>
+            <div className="mode-toggle">
+              <button className={pageMode === 'compare' ? 'active' : ''} onClick={() => setPageMode('compare')}>
+                Compare
+              </button>
+              <button className={pageMode === 'interact' ? 'active' : ''} onClick={() => setPageMode('interact')}>
+                Interact (click/hover)
+              </button>
+              <button
+                className={pageMode === 'inspect' ? 'active' : ''}
+                onClick={() => setPageMode('inspect')}
+                title="Click an element on either page to see its structure and CSS"
+              >
+                Inspect elements
+              </button>
+            </div>
             <button
-              className={mode === 'diff' ? 'active' : ''}
-              onClick={() => setMode('diff')}
-              disabled={!diffDataUrl}
+              className="compare-elements-btn"
+              disabled={pageMode !== 'inspect' || !inspected.left || !inspected.right || elementDiffing}
+              onClick={runElementDiff}
+              title="Switch to Inspect elements, pick one element on each side, then compare just those two regions"
             >
-              Diff overlay
+              {elementDiffing ? 'Comparing…' : 'Compare selected elements'}
             </button>
+          </div>
+
+          <div className="toolbar-group">
+            <span className="toolbar-label">View</span>
+            <div className="mode-toggle">
+              <button className={mode === 'slider' ? 'active' : ''} onClick={() => setMode('slider')}>
+                Slider
+              </button>
+              <button
+                className={mode === 'diff' ? 'active' : ''}
+                onClick={() => setMode('diff')}
+                disabled={!diffDataUrl}
+              >
+                Diff overlay
+              </button>
+            </div>
           </div>
         </div>
 
-        <button className="swap-btn" onClick={() => setSwapped((s) => !s)} title="Swap left/right positions">
-          ⇄ Swap
-        </button>
+        <div className="toolbar-center">
+          <button className="swap-btn" onClick={() => setSwapped((s) => !s)} title="Swap left/right positions">
+            ⇄ Swap
+          </button>
+        </div>
 
-        <button className="run-diff" disabled={!bothReady || diffing} onClick={runDiff}>
-          {diffing ? 'Comparing…' : 'Calculate match %'}
-        </button>
-        {matchPercent !== null && <span className="match-badge">{matchPercent.toFixed(2)}% match</span>}
+        <div className="toolbar-end">
+          <button className="run-diff" disabled={!bothReady || diffing} onClick={runDiff}>
+            {diffing ? 'Comparing…' : 'Calculate match %'}
+          </button>
+          {matchPercent !== null && <span className="match-badge">{matchPercent.toFixed(2)}% match</span>}
+        </div>
       </div>
 
       {diffError && <p className="error">{diffError}</p>}
 
       <div className="overlay-stage-wrapper" ref={containerRef}>
-        <div className="overlay-stage" ref={stageRef} style={{ width: size.width, height: size.height }}>
+        <div
+          className={`overlay-stage${fitToWindow ? ' fit' : ''}`}
+          ref={stageRef}
+          style={
+            fitToWindow
+              ? undefined
+              : { width: size.width, height: size.height, transform: `scale(${zoom})`, transformOrigin: 'center' }
+          }
+        >
           {renderLayer('left')}
           {renderLayer('right')}
 
@@ -404,7 +542,7 @@ export default function OverlayCompare(): JSX.Element {
           <div
             className="interaction-layer"
             style={{
-              pointerEvents: interactMode ? 'none' : 'auto',
+              pointerEvents: pageMode !== 'compare' ? 'none' : 'auto',
               cursor: activeDrag === 'slider' ? 'ew-resize' : activeDrag === 'pan' ? 'grabbing' : 'grab'
             }}
             onPointerDown={handlePointerDown}
@@ -420,6 +558,50 @@ export default function OverlayCompare(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {pageMode === 'inspect' && inspected.left && (
+        <InspectPanel
+          key="left"
+          selection={inspected.left}
+          side="left"
+          defaultCorner="left"
+          onClose={() => setInspected((prev) => ({ ...prev, left: null }))}
+        />
+      )}
+      {pageMode === 'inspect' && inspected.right && (
+        <InspectPanel
+          key="right"
+          selection={inspected.right}
+          side="right"
+          defaultCorner="right"
+          onClose={() => setInspected((prev) => ({ ...prev, right: null }))}
+        />
+      )}
+
+      {pageMode === 'inspect' && (elementDiff || elementDiffError) && (
+        <div className="element-diff-popup">
+          <div className="element-diff-header">
+            <span>{elementDiff ? `Element match: ${elementDiff.matchPercent.toFixed(2)}%` : 'Compare failed'}</span>
+            <button
+              className="inspect-panel-close"
+              onClick={() => {
+                setElementDiff(null)
+                setElementDiffError(null)
+              }}
+              title="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="element-diff-body">
+            {elementDiff ? (
+              <img src={elementDiff.diffDataUrl} alt="Element diff" className="element-diff-image" />
+            ) : (
+              <p className="error">{elementDiffError}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

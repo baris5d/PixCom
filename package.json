@@ -1,5 +1,5 @@
 {
-  "name": "pixel-compare",
+  "name": "pixcom",
   "version": "0.1.0",
   "description": "Compare a website, image, or Figma frame against another with a pixel-perfect slider overlay.",
   "main": "./out/main/index.js",
@@ -12,6 +12,10 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist": "electron-vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.pixcom.app",
+    "productName": "PixCom"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
