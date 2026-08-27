@@ -1,15 +1,18 @@
-import darkTheme from './themes/dark.json'
-import lightTheme from './themes/light.json'
-import nightOwlTheme from './themes/night-owl.json'
-import draculaTheme from './themes/dracula.json'
 import type { Theme, ThemeColors } from './types'
 
-export const BUILTIN_THEMES: Theme[] = [
-  { id: 'dark', name: darkTheme.name, colors: darkTheme.colors as ThemeColors },
-  { id: 'light', name: lightTheme.name, colors: lightTheme.colors as ThemeColors },
-  { id: 'night-owl', name: nightOwlTheme.name, colors: nightOwlTheme.colors as ThemeColors },
-  { id: 'dracula', name: draculaTheme.name, colors: draculaTheme.colors as ThemeColors }
-]
+// Auto-discovers every JSON file in ./themes at build time — adding a new
+// built-in theme is just dropping a file there, no import list to update.
+const modules = import.meta.glob('./themes/*.json', { eager: true }) as Record<
+  string,
+  { name: string; colors: ThemeColors }
+>
+
+export const BUILTIN_THEMES: Theme[] = Object.entries(modules)
+  .map(([path, mod]) => {
+    const id = path.match(/\/([^/]+)\.json$/)?.[1] ?? path
+    return { id, name: mod.name, colors: mod.colors }
+  })
+  .sort((a, b) => a.name.localeCompare(b.name))
 
 export const DEFAULT_THEME_ID = 'dark'
 
@@ -43,9 +46,11 @@ const CSS_VAR_NAMES: Record<keyof ThemeColors, string> = {
   sliderHandle: '--theme-slider-handle'
 }
 
+export const THEME_COLOR_KEYS = Object.keys(CSS_VAR_NAMES) as Array<keyof ThemeColors>
+
 export function applyTheme(colors: ThemeColors): void {
   const root = document.documentElement.style
-  for (const key of Object.keys(CSS_VAR_NAMES) as Array<keyof ThemeColors>) {
+  for (const key of THEME_COLOR_KEYS) {
     const value = colors[key]
     if (typeof value === 'string' && value.length > 0) {
       root.setProperty(CSS_VAR_NAMES[key], value)

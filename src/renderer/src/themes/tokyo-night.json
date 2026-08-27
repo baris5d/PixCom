@@ -1,0 +1,32 @@
+{
+  "name": "Tokyo Night",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(122, 162, 247, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(158, 206, 106, 0.08), transparent 55%), linear-gradient(165deg, #1a1b26 0%, #222436 45%, #1a1b26 100%)",
+    "textPrimary": "#c0caf5",
+    "textSecondary": "#a9b1d6",
+    "textMuted": "#565f89",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(26, 27, 38, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(122, 162, 247, 0.3)",
+    "accentBorder": "rgba(122, 162, 247, 0.42)",
+    "accentText": "#7aa2f7",
+    "accentSolid": "#7aa2f7",
+    "successBg": "rgba(158, 206, 106, 0.14)",
+    "successBorder": "rgba(158, 206, 106, 0.4)",
+    "successText": "#9ece6a",
+    "dangerBg": "rgba(247, 118, 142, 0.85)",
+    "dangerText": "#f7768e",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(192, 202, 245, 0.65)",
+    "sliderHandle": "#bb9af7"
+  }
+}

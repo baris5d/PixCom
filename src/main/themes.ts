@@ -1,4 +1,4 @@
-import { app, shell } from 'electron'
+import { app, dialog, shell } from 'electron'
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
@@ -63,4 +63,25 @@ export function deleteCustomTheme(id: string): void {
 
 export function openThemesFolder(): void {
   shell.openPath(themesDir())
+}
+
+/** Reveals a custom theme's file in Finder/Explorer. No-op for built-in
+ *  themes, which don't have a file on disk to point to. */
+export function revealCustomTheme(id: string): void {
+  const path = join(themesDir(), `${id}.json`)
+  if (existsSync(path)) shell.showItemInFolder(path)
+}
+
+/** Lets the user save the current draft (built-in or custom, edited or
+ *  not) to wherever they choose, e.g. to hand the file to someone else —
+ *  independent of the userData themes folder. */
+export async function exportTheme(name: string, colors: Record<string, string>): Promise<string | null> {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: 'Export theme',
+    defaultPath: `${slugify(name)}.json`,
+    filters: [{ name: 'Theme', extensions: ['json'] }]
+  })
+  if (canceled || !filePath) return null
+  writeFileSync(filePath, JSON.stringify({ name, colors }, null, 2), 'utf8')
+  return filePath
 }

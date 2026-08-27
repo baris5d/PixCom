@@ -143,15 +143,6 @@ export default function OverlayCompare(): JSX.Element {
     }
   }, [pageMode, left.navigatedUrl, right.navigatedUrl])
 
-  function copyUrlToOtherSide(side: Side): void {
-    const source = stateOf(side)
-    const target: Side = side === 'left' ? 'right' : 'left'
-    const url = (source.navigatedUrl ?? source.addressInput).trim()
-    if (!url) return
-    setSide(target, { kind: 'url' })
-    navigate(target, url)
-  }
-
   const SLIDER_GRAB_PERCENT = 4 // how close to the line counts as "grabbing" it
 
   function updatePercentFromClientX(clientX: number): void {
@@ -284,36 +275,63 @@ export default function OverlayCompare(): JSX.Element {
     const ref = side === 'left' ? leftRef : rightRef
     return (
       <div className="overlay-sidebar">
-        <span className="sidebar-title">{side === 'left' ? 'Left' : 'Right'}</span>
-        <div className="kind-toggle">
-          <button
-            className={state.kind === 'url' ? 'active' : ''}
-            onClick={() => setSide(side, { kind: 'url' })}
-          >
-            Website
-          </button>
-          <button
-            className={state.kind === 'image' ? 'active' : ''}
-            onClick={() => setSide(side, { kind: 'image' })}
-          >
-            Image
-          </button>
+        <div className="sidebar-header">
+          <span className="sidebar-title">{side === 'left' ? 'Source A' : 'Source B'}</span>
+          <div className="kind-toggle">
+            <button
+              className={state.kind === 'url' ? 'active' : ''}
+              onClick={() => setSide(side, { kind: 'url' })}
+            >
+              Website
+            </button>
+            <button
+              className={state.kind === 'image' ? 'active' : ''}
+              onClick={() => setSide(side, { kind: 'image' })}
+            >
+              Image
+            </button>
+          </div>
         </div>
 
         {state.kind === 'url' ? (
           <div className="address-bar">
-            <button className="nav-btn" disabled={!state.navState.canGoBack} onClick={() => ref.current?.goBack()}>
-              ←
+            <button
+              className="nav-btn"
+              disabled={!state.navState.canGoBack}
+              onClick={() => ref.current?.goBack()}
+              title="Back"
+              aria-label="Back"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M10 3 L5 8 L10 13" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
             <button
               className="nav-btn"
               disabled={!state.navState.canGoForward}
               onClick={() => ref.current?.goForward()}
+              title="Forward"
+              aria-label="Forward"
             >
-              →
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M6 3 L11 8 L6 13" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
-            <button className="nav-btn" disabled={!state.navigatedUrl} onClick={() => ref.current?.reload()}>
-              ⟳
+            <button
+              className="nav-btn"
+              disabled={!state.navigatedUrl}
+              onClick={() => ref.current?.reload()}
+              title="Reload"
+              aria-label="Reload"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path
+                  d="M13 8a5 5 0 1 1-1.6-3.68"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M13 2.8 V5.5 H10.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
             <input
               type="text"
@@ -331,14 +349,6 @@ export default function OverlayCompare(): JSX.Element {
               onClick={() => navigate(side, state.addressInput)}
             >
               Go
-            </button>
-            <button
-              className="nav-btn copy-btn"
-              disabled={!state.addressInput.trim()}
-              title={`Copy this URL to the ${side === 'left' ? 'right' : 'left'} side`}
-              onClick={() => copyUrlToOtherSide(side)}
-            >
-              {side === 'left' ? '⇒' : '⇐'}
             </button>
           </div>
         ) : (
@@ -397,6 +407,17 @@ export default function OverlayCompare(): JSX.Element {
     <div className="overlay-compare">
       <div className="overlay-sidebars">
         {renderSideBar('left', left)}
+        <button
+          className="swap-sides-btn"
+          onClick={() => setSwapped((s) => !s)}
+          title="Swap left/right positions"
+          aria-label="Swap left/right positions"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 5.5 H13 M10 2.5 L13 5.5 L10 8.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14 10.5 H3 M6 7.5 L3 10.5 L6 13.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         {renderSideBar('right', right)}
       </div>
 
@@ -447,8 +468,10 @@ export default function OverlayCompare(): JSX.Element {
             <span className="size-readout">{scrollSensitivity.toFixed(1)}x</span>
           </div>
 
+          <span className="toolbar-divider" />
+
           <div className="toolbar-group">
-            <span className="toolbar-label">Pages</span>
+            <span className="toolbar-label">Mode</span>
             <div className="mode-toggle">
               <button className={pageMode === 'compare' ? 'active' : ''} onClick={() => setPageMode('compare')}>
                 Compare
@@ -464,15 +487,19 @@ export default function OverlayCompare(): JSX.Element {
                 Inspect elements
               </button>
             </div>
-            <button
-              className="compare-elements-btn"
-              disabled={pageMode !== 'inspect' || !inspected.left || !inspected.right || elementDiffing}
-              onClick={runElementDiff}
-              title="Switch to Inspect elements, pick one element on each side, then compare just those two regions"
-            >
-              {elementDiffing ? 'Comparing…' : 'Compare selected elements'}
-            </button>
+            {pageMode === 'inspect' && (
+              <button
+                className="compare-elements-btn"
+                disabled={!inspected.left || !inspected.right || elementDiffing}
+                onClick={runElementDiff}
+                title="Pick one element on each side, then compare just those two regions"
+              >
+                {elementDiffing ? 'Comparing…' : 'Compare selected elements'}
+              </button>
+            )}
           </div>
+
+          <span className="toolbar-divider" />
 
           <div className="toolbar-group">
             <span className="toolbar-label">View</span>
@@ -485,12 +512,6 @@ export default function OverlayCompare(): JSX.Element {
               </button>
             </div>
           </div>
-        </div>
-
-        <div className="toolbar-center">
-          <button className="swap-btn" onClick={() => setSwapped((s) => !s)} title="Swap left/right positions">
-            ⇄ Swap
-          </button>
         </div>
 
         <div className="toolbar-end">
@@ -521,7 +542,9 @@ export default function OverlayCompare(): JSX.Element {
           )}
 
           {!bothReady && (
-            <div className="overlay-placeholder">Load a website or image on both sides to start comparing</div>
+            <div className="overlay-placeholder">
+              <span className="overlay-placeholder-chip">Load a website or image on both sides to start comparing</span>
+            </div>
           )}
 
           {bothReady && (

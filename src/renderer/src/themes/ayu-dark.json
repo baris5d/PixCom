@@ -1,0 +1,32 @@
+{
+  "name": "Ayu Dark",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(57, 186, 230, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(184, 204, 82, 0.08), transparent 55%), linear-gradient(165deg, #0f1419 0%, #131721 45%, #0f1419 100%)",
+    "textPrimary": "#e6e1cf",
+    "textSecondary": "#b8cfe0",
+    "textMuted": "#5c6773",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(15, 20, 25, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.15)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(57, 186, 230, 0.3)",
+    "accentBorder": "rgba(57, 186, 230, 0.42)",
+    "accentText": "#39bae6",
+    "accentSolid": "#39bae6",
+    "successBg": "rgba(184, 204, 82, 0.14)",
+    "successBorder": "rgba(184, 204, 82, 0.4)",
+    "successText": "#b8cc52",
+    "dangerBg": "rgba(240, 113, 120, 0.85)",
+    "dangerText": "#f07178",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(230, 225, 207, 0.65)",
+    "sliderHandle": "#ffb454"
+  }
+}

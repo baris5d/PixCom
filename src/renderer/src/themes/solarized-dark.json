@@ -1,0 +1,32 @@
+{
+  "name": "Solarized Dark",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(38, 139, 210, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(133, 153, 0, 0.08), transparent 55%), linear-gradient(165deg, #002b36 0%, #073642 45%, #002b36 100%)",
+    "textPrimary": "#9ca9ab",
+    "textSecondary": "#93a1a1",
+    "textMuted": "#586e75",
+    "textBright": "#eee8d5",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(0, 43, 54, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(38, 139, 210, 0.3)",
+    "accentBorder": "rgba(38, 139, 210, 0.42)",
+    "accentText": "#3c97d7",
+    "accentSolid": "#268bd2",
+    "successBg": "rgba(133, 153, 0, 0.14)",
+    "successBorder": "rgba(133, 153, 0, 0.4)",
+    "successText": "#91a31a",
+    "dangerBg": "rgba(220, 50, 47, 0.85)",
+    "dangerText": "#e35b59",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(131, 148, 150, 0.65)",
+    "sliderHandle": "#268bd2"
+  }
+}

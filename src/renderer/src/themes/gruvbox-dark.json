@@ -1,0 +1,32 @@
+{
+  "name": "Gruvbox Dark",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(131, 165, 152, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(184, 187, 38, 0.08), transparent 55%), linear-gradient(165deg, #282828 0%, #32302f 45%, #282828 100%)",
+    "textPrimary": "#ebdbb2",
+    "textSecondary": "#a89984",
+    "textMuted": "#7c6f64",
+    "textBright": "#fbf1c7",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(40, 40, 40, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(131, 165, 152, 0.3)",
+    "accentBorder": "rgba(131, 165, 152, 0.42)",
+    "accentText": "#83a598",
+    "accentSolid": "#83a598",
+    "successBg": "rgba(184, 187, 38, 0.14)",
+    "successBorder": "rgba(184, 187, 38, 0.4)",
+    "successText": "#b8bb26",
+    "dangerBg": "rgba(251, 73, 52, 0.85)",
+    "dangerText": "#fb4934",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(235, 219, 178, 0.65)",
+    "sliderHandle": "#83a598"
+  }
+}

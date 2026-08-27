@@ -1,0 +1,32 @@
+{
+  "name": "Nord",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(136, 192, 208, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(163, 190, 140, 0.08), transparent 55%), linear-gradient(165deg, #2e3440 0%, #3b4252 45%, #2e3440 100%)",
+    "textPrimary": "#d8dee9",
+    "textSecondary": "#9aa5b8",
+    "textMuted": "#6f7686",
+    "textBright": "#eceff4",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(46, 52, 64, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(136, 192, 208, 0.3)",
+    "accentBorder": "rgba(136, 192, 208, 0.42)",
+    "accentText": "#88c0d0",
+    "accentSolid": "#88c0d0",
+    "successBg": "rgba(163, 190, 140, 0.14)",
+    "successBorder": "rgba(163, 190, 140, 0.4)",
+    "successText": "#a3be8c",
+    "dangerBg": "rgba(191, 97, 106, 0.85)",
+    "dangerText": "#cc8188",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(216, 222, 233, 0.65)",
+    "sliderHandle": "#81a1c1"
+  }
+}

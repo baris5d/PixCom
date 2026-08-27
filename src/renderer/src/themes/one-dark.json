@@ -1,0 +1,32 @@
+{
+  "name": "One Dark",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(97, 175, 239, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(152, 195, 121, 0.08), transparent 55%), linear-gradient(165deg, #282c34 0%, #2c313c 45%, #282c34 100%)",
+    "textPrimary": "#abb2bf",
+    "textSecondary": "#8b95a5",
+    "textMuted": "#646b77",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(40, 44, 52, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(97, 175, 239, 0.3)",
+    "accentBorder": "rgba(97, 175, 239, 0.42)",
+    "accentText": "#61afef",
+    "accentSolid": "#61afef",
+    "successBg": "rgba(152, 195, 121, 0.14)",
+    "successBorder": "rgba(152, 195, 121, 0.4)",
+    "successText": "#98c379",
+    "dangerBg": "rgba(224, 108, 117, 0.85)",
+    "dangerText": "#e06c75",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(171, 178, 191, 0.65)",
+    "sliderHandle": "#61afef"
+  }
+}

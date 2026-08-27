@@ -1,0 +1,32 @@
+{
+  "name": "Rosé Pine",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(196, 167, 231, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(49, 116, 143, 0.08), transparent 55%), linear-gradient(165deg, #191724 0%, #1f1d2e 45%, #191724 100%)",
+    "textPrimary": "#e0def4",
+    "textSecondary": "#908caa",
+    "textMuted": "#6e6a86",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(25, 23, 36, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(196, 167, 231, 0.3)",
+    "accentBorder": "rgba(196, 167, 231, 0.42)",
+    "accentText": "#c4a7e7",
+    "accentSolid": "#c4a7e7",
+    "successBg": "rgba(49, 116, 143, 0.14)",
+    "successBorder": "rgba(49, 116, 143, 0.4)",
+    "successText": "#5a90a5",
+    "dangerBg": "rgba(235, 111, 146, 0.85)",
+    "dangerText": "#eb6f92",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(224, 222, 244, 0.65)",
+    "sliderHandle": "#f6c177"
+  }
+}

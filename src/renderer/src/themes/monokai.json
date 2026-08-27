@@ -1,0 +1,32 @@
+{
+  "name": "Monokai",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(102, 217, 239, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(166, 226, 46, 0.08), transparent 55%), linear-gradient(165deg, #272822 0%, #2f302a 45%, #272822 100%)",
+    "textPrimary": "#f8f8f2",
+    "textSecondary": "#c2c2bc",
+    "textMuted": "#75715e",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(39, 40, 34, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(102, 217, 239, 0.3)",
+    "accentBorder": "rgba(102, 217, 239, 0.42)",
+    "accentText": "#66d9ef",
+    "accentSolid": "#66d9ef",
+    "successBg": "rgba(166, 226, 46, 0.14)",
+    "successBorder": "rgba(166, 226, 46, 0.4)",
+    "successText": "#a6e22e",
+    "dangerBg": "rgba(249, 38, 114, 0.85)",
+    "dangerText": "#f93179",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(248, 248, 242, 0.65)",
+    "sliderHandle": "#ae81ff"
+  }
+}

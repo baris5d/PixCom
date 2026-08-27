@@ -1,0 +1,32 @@
+{
+  "name": "Catppuccin Mocha",
+  "colors": {
+    "bgGradient": "radial-gradient(circle at 15% 10%, rgba(137, 180, 250, 0.1), transparent 55%), radial-gradient(circle at 85% 15%, rgba(166, 227, 161, 0.08), transparent 55%), linear-gradient(165deg, #1e1e2e 0%, #24273a 45%, #1e1e2e 100%)",
+    "textPrimary": "#cdd6f4",
+    "textSecondary": "#a6adc8",
+    "textMuted": "#6c7086",
+    "textBright": "#ffffff",
+    "surfaceBg": "rgba(255, 255, 255, 0.045)",
+    "surfaceBorder": "rgba(255, 255, 255, 0.13)",
+    "surfaceStrongBg": "rgba(30, 30, 46, 0.96)",
+    "inputBg": "rgba(0, 0, 0, 0.22)",
+    "inputBorder": "rgba(255, 255, 255, 0.1)",
+    "overlayScrim": "rgba(8, 8, 12, 0.6)",
+    "hoverBg": "rgba(255, 255, 255, 0.09)",
+    "divider": "rgba(255, 255, 255, 0.12)",
+    "accentBg": "rgba(137, 180, 250, 0.3)",
+    "accentBorder": "rgba(137, 180, 250, 0.42)",
+    "accentText": "#89b4fa",
+    "accentSolid": "#89b4fa",
+    "successBg": "rgba(166, 227, 161, 0.14)",
+    "successBorder": "rgba(166, 227, 161, 0.4)",
+    "successText": "#a6e3a1",
+    "dangerBg": "rgba(243, 139, 168, 0.85)",
+    "dangerText": "#f38ba8",
+    "buttonBg": "rgba(255, 255, 255, 0.05)",
+    "buttonBorder": "rgba(255, 255, 255, 0.08)",
+    "buttonHoverBg": "rgba(255, 255, 255, 0.09)",
+    "sliderColor": "rgba(205, 214, 244, 0.65)",
+    "sliderHandle": "#cba6f7"
+  }
+}

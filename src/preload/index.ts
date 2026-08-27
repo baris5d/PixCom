@@ -80,7 +80,10 @@ const api = {
     saveCustom: (name: string, colors: Record<string, string>): Promise<string> =>
       ipcRenderer.invoke('themes:save-custom', name, colors),
     deleteCustom: (id: string): void => ipcRenderer.send('themes:delete-custom', id),
-    openFolder: (): void => ipcRenderer.send('themes:open-folder')
+    openFolder: (): void => ipcRenderer.send('themes:open-folder'),
+    revealCustom: (id: string): void => ipcRenderer.send('themes:reveal-custom', id),
+    export: (name: string, colors: Record<string, string>): Promise<string | null> =>
+      ipcRenderer.invoke('themes:export', name, colors)
   }
 }
 
