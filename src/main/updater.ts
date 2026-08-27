@@ -4,6 +4,7 @@ import { app, ipcMain, type BrowserWindow } from 'electron'
 // in a packaged build even though it type-checks and builds fine locally
 // — import the default and destructure instead.
 import electronUpdater from 'electron-updater'
+import { loadSettings } from './settings'
 const { autoUpdater } = electronUpdater
 
 // electron-builder already publishes latest.yml/latest-mac.yml alongside
@@ -42,10 +43,19 @@ export function registerUpdater(): void {
   })
 
   // Only meaningful for a packaged build — dev runs have no app-update.yml
-  // and aren't versioned against a real release anyway.
-  if (app.isPackaged) {
+  // and aren't versioned against a real release anyway. Also respects the
+  // "Automatically check for updates" setting (on by default).
+  if (app.isPackaged && loadSettings().autoUpdateCheck) {
     autoUpdater.checkForUpdates().catch(() => {
       /* offline, rate-limited, or no releases yet — nothing to surface */
     })
+  }
+}
+
+// Lets the renderer trigger an update check on demand, independent of the
+// startup check — used when the user flips the setting on mid-session.
+export function checkForUpdatesNow(): void {
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates().catch(() => {})
   }
 }

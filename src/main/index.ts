@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
-import { registerUpdater, setUpdaterWindow } from './updater'
+import { registerUpdater, setUpdaterWindow, checkForUpdatesNow } from './updater'
+import { loadSettings, saveSettings, type AppSettings } from './settings'
 
 // Electron's default UA includes an "Electron/x.y.z" token that some
 // bot-protection services (Akamai, Cloudflare, etc.) block outright.
@@ -86,6 +87,17 @@ function registerWindowControlHandlers(): void {
   ipcMain.handle('app:get-version', () => app.getVersion())
 }
 
+function registerSettingsHandlers(): void {
+  ipcMain.handle('settings:get', () => loadSettings())
+  ipcMain.on('settings:set', (_event, settings: AppSettings) => {
+    const wasOff = !loadSettings().autoUpdateCheck
+    saveSettings(settings)
+    // Flipping the setting on mid-session shouldn't require an app
+    // restart before the first check happens.
+    if (wasOff && settings.autoUpdateCheck) checkForUpdatesNow()
+  })
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.pixcom.app')
 
@@ -95,6 +107,7 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   registerWindowControlHandlers()
+  registerSettingsHandlers()
   registerUpdater()
   createWindow()
 

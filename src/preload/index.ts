@@ -16,6 +16,10 @@ export interface DiffResult {
   height: number
 }
 
+export interface AppSettings {
+  autoUpdateCheck: boolean
+}
+
 const api = {
   platform: process.platform,
 
@@ -55,6 +59,11 @@ const api = {
       ipcRenderer.on('updater:error', listener)
       return () => ipcRenderer.removeListener('updater:error', listener)
     }
+  },
+
+  settings: {
+    get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
+    set: (settings: AppSettings): void => ipcRenderer.send('settings:set', settings)
   }
 }
 

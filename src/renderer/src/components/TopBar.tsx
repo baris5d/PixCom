@@ -11,6 +11,9 @@ export default function TopBar(): JSX.Element {
   const [updateProgress, setUpdateProgress] = useState<number | null>(null)
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
+  const [modalDismissed, setModalDismissed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [autoUpdateCheck, setAutoUpdateCheck] = useState(true)
 
   useEffect(() => {
     window.api.window.isMaximized().then(setMaximized)
@@ -22,7 +25,14 @@ export default function TopBar(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const offAvailable = window.api.updater.onAvailable(setUpdateVersion)
+    window.api.settings.get().then((s) => setAutoUpdateCheck(s.autoUpdateCheck))
+  }, [])
+
+  useEffect(() => {
+    const offAvailable = window.api.updater.onAvailable((v) => {
+      setUpdateVersion(v)
+      setModalDismissed(false)
+    })
     const offProgress = window.api.updater.onProgress(setUpdateProgress)
     const offError = window.api.updater.onError((message) => {
       setUpdating(false)
@@ -41,11 +51,23 @@ export default function TopBar(): JSX.Element {
     window.api.updater.install()
   }
 
+  function toggleAutoUpdateCheck(): void {
+    const next = !autoUpdateCheck
+    setAutoUpdateCheck(next)
+    window.api.settings.set({ autoUpdateCheck: next })
+  }
+
   // macOS convention: window controls sit at the top-left, title/subtitle
   // fill the rest to the right. Windows convention (and everything else)
   // keeps controls on the right. CSS row-reverse flips visual order
   // without touching which element is which.
   const isMac = window.api.platform === 'darwin'
+
+  // The topbar button alone is easy to miss, so a modal grabs attention
+  // the moment an update is found. It can be dismissed (still reachable
+  // via the small button) unless a download is actively in progress, so
+  // the user isn't left wondering whether the app just quit on its own.
+  const showModal = updateVersion !== null && (updating || updateError !== null || !modalDismissed)
 
   const minimizeBtn = (
     <button
@@ -117,6 +139,28 @@ export default function TopBar(): JSX.Element {
             {updating ? `Updating… ${updateProgress ?? 0}%` : `Update to v${updateVersion}`}
           </button>
         )}
+        <div className="settings-anchor">
+          <button
+            className="topbar-btn"
+            onClick={() => setSettingsOpen((open) => !open)}
+            title="Settings"
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
+          {settingsOpen && (
+            <>
+              <div className="settings-scrim" onClick={() => setSettingsOpen(false)} />
+              <div className="settings-popover">
+                <span className="settings-popover-title">Settings</span>
+                <label className="settings-row">
+                  <input type="checkbox" checked={autoUpdateCheck} onChange={toggleAutoUpdateCheck} />
+                  Automatically check for updates
+                </label>
+              </div>
+            </>
+          )}
+        </div>
         {/* macOS traffic-light order is close, minimize, maximize (left to
             right) — the opposite of the Windows/other convention. Moving
             the whole group to the left (topbar-mac) doesn't reorder these
@@ -135,6 +179,28 @@ export default function TopBar(): JSX.Element {
           </>
         )}
       </div>
+
+      {showModal && (
+        <div className="update-modal-overlay">
+          <div className="update-modal">
+            <h3>Update available</h3>
+            <p>
+              Version {updateVersion} is ready to install. {updating ? 'Downloading now — the app will restart automatically once it’s done.' : ''}
+            </p>
+            {updateError && <p className="error">{updateError}</p>}
+            <div className="update-modal-actions">
+              {!updating && (
+                <button className="update-modal-later" onClick={() => setModalDismissed(true)}>
+                  Later
+                </button>
+              )}
+              <button className="update-modal-primary" onClick={handleUpdateClick} disabled={updating}>
+                {updating ? `Updating… ${updateProgress ?? 0}%` : 'Update now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
