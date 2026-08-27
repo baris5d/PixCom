@@ -1,6 +1,6 @@
 {
   "name": "pixcom",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Compare a website, image, or Figma frame against another with a pixel-perfect slider overlay.",
   "main": "./out/main/index.js",
   "author": "Baris Dede",
