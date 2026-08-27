@@ -100,13 +100,43 @@ function registerWindowControlHandlers(): void {
 
 function registerSettingsHandlers(): void {
   ipcMain.handle('settings:get', () => loadSettings())
-  ipcMain.on('settings:set', (_event, settings: AppSettings) => {
+  ipcMain.on('settings:set', (_event, settings: Partial<AppSettings>) => {
     const wasOff = !loadSettings().autoUpdateCheck
     saveSettings(settings)
     // Flipping the setting on mid-session shouldn't require an app
     // restart before the first check happens.
     if (wasOff && settings.autoUpdateCheck) checkForUpdatesNow()
   })
+}
+
+export interface WhatsNewInfo {
+  show: boolean
+  previousVersion: string | null
+  currentVersion: string
+}
+
+// Computed once at startup (not per-call) since checking is also what
+// marks it as seen — settings.lastSeenVersion is updated here, so a
+// second call in the same session must not re-report `show: true`.
+let whatsNewInfo: WhatsNewInfo | null = null
+
+function computeWhatsNew(): WhatsNewInfo {
+  const settings = loadSettings()
+  const currentVersion = app.getVersion()
+  const previousVersion = settings.lastSeenVersion ?? null
+  // No lastSeenVersion at all means either a fresh install or an
+  // upgrade from a version that predates this feature — either way
+  // there's nothing meaningful to diff against, so don't show anything
+  // this once, but start tracking from here on.
+  const show = previousVersion !== null && previousVersion !== currentVersion
+  if (previousVersion !== currentVersion) {
+    saveSettings({ lastSeenVersion: currentVersion })
+  }
+  return { show, previousVersion, currentVersion }
+}
+
+function registerWhatsNewHandler(): void {
+  ipcMain.handle('app:whats-new', () => whatsNewInfo)
 }
 
 function registerThemeHandlers(): void {
@@ -127,10 +157,13 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  whatsNewInfo = computeWhatsNew()
+
   registerIpcHandlers()
   registerWindowControlHandlers()
   registerSettingsHandlers()
   registerThemeHandlers()
+  registerWhatsNewHandler()
   registerUpdater()
   createWindow()
 

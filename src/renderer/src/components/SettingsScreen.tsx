@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { applyTheme, THEME_COLOR_KEYS } from '../theme'
+import { CHANGELOG } from '../changelog'
 import type { Theme, ThemeColors } from '../types'
 
 type Tab = 'general' | 'theme' | 'about'
@@ -117,6 +118,20 @@ export default function SettingsScreen({
                 <button className="settings-link" onClick={() => window.api.openExternal(REPO_URL)}>
                   {REPO_URL.replace('https://', '')}
                 </button>
+
+                <h4 style={{ marginTop: 20 }}>What's new</h4>
+                {CHANGELOG.map((entry) => (
+                  <div key={entry.version} className="whats-new-entry">
+                    <p className="whats-new-version">
+                      v{entry.version} · {entry.date}
+                    </p>
+                    <ul className="whats-new-list">
+                      {entry.highlights.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </>
             )}
           </div>

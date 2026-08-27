@@ -229,6 +229,39 @@ body {
   color: var(--theme-text-secondary);
 }
 
+.whats-new-card {
+  width: min(90vw, 440px);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.whats-new-entry + .whats-new-entry {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--theme-divider);
+}
+
+.whats-new-version {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--theme-text-secondary);
+}
+
+.whats-new-list {
+  margin: 0 0 4px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--theme-text-primary);
+}
+
+.whats-new-list li {
+  margin-bottom: 6px;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

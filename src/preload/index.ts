@@ -19,6 +19,13 @@ export interface DiffResult {
 export interface AppSettings {
   autoUpdateCheck: boolean
   themeId: string
+  lastSeenVersion?: string
+}
+
+export interface WhatsNewInfo {
+  show: boolean
+  previousVersion: string | null
+  currentVersion: string
 }
 
 export interface CustomThemeFile {
@@ -72,8 +79,10 @@ const api = {
 
   settings: {
     get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
-    set: (settings: AppSettings): void => ipcRenderer.send('settings:set', settings)
+    set: (settings: Partial<AppSettings>): void => ipcRenderer.send('settings:set', settings)
   },
+
+  getWhatsNew: (): Promise<WhatsNewInfo> => ipcRenderer.invoke('app:whats-new'),
 
   themes: {
     listCustom: (): Promise<CustomThemeFile[]> => ipcRenderer.invoke('themes:list-custom'),

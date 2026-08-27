@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import SettingsScreen from './SettingsScreen'
+import WhatsNewModal from './WhatsNewModal'
 import { applyTheme, BUILTIN_THEMES, DEFAULT_THEME_ID, findTheme } from '../theme'
+import { entriesSince, type ChangelogEntry } from '../changelog'
 import type { Theme, ThemeColors } from '../types'
 
 // The window is frameless (see main/index.ts) so this bar is the *only*
@@ -19,6 +21,7 @@ export default function TopBar(): JSX.Element {
   const [autoUpdateCheck, setAutoUpdateCheck] = useState(true)
   const [themes, setThemes] = useState<Theme[]>(BUILTIN_THEMES)
   const [themeId, setThemeId] = useState(DEFAULT_THEME_ID)
+  const [whatsNew, setWhatsNew] = useState<{ version: string; entries: ChangelogEntry[] } | null>(null)
 
   useEffect(() => {
     window.api.window.isMaximized().then(setMaximized)
@@ -27,6 +30,14 @@ export default function TopBar(): JSX.Element {
 
   useEffect(() => {
     window.api.getVersion().then(setVersion)
+  }, [])
+
+  useEffect(() => {
+    window.api.getWhatsNew().then((info) => {
+      if (!info.show) return
+      const entries = entriesSince(info.previousVersion)
+      if (entries.length > 0) setWhatsNew({ version: info.currentVersion, entries })
+    })
   }, [])
 
   useEffect(() => {
@@ -249,6 +260,14 @@ export default function TopBar(): JSX.Element {
             </div>
           </div>
         </div>
+      )}
+
+      {!showUpdateModal && whatsNew && (
+        <WhatsNewModal
+          currentVersion={whatsNew.version}
+          entries={whatsNew.entries}
+          onClose={() => setWhatsNew(null)}
+        />
       )}
 
       {settingsOpen && (
